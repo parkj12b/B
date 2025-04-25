@@ -42,71 +42,107 @@ void yyerror(const char *s) {
 %left NOT
 %left AMPERSAND //binary and
 %left LSHIFT RSHIFT 
+%precedence BINARY
 %right INC DEC UNARY DEREF ADDR_OF
-%left FUNC_CALL LBRACKET RBRACKET LPAREN RPAREN
-%nonassoc IFX
-%nonassoc ELSE
-%nonassoc PAREN
+%left LBRACKET RBRACKET LPAREN RPAREN
+%left FUNC_CALL
 
 %%
 
-program :
-    definition_list
+program:
+    opt_definition
     ;
-    
-definition_list :
+
+opt_definition:
     /* empty */
-    | definition_list definition
+    | definition
     ;
 
-definition : 
-    IDENTIFIER opt_array_decl opt_ival_list SEMICOLON
-    | IDENTIFIER LPAREN opt_param_list RPAREN statement
+definition:
+    IDENTIFIER opt_const_decl opt_ival_list SEMICOLON
+    | IDENTIFIER LBRACE opt_ident_list RBRACE statement 
     ;
 
-ival : 
-    constant
-    | IDENTIFIER
-    ;
-
-opt_array_decl :
+opt_ident_list:
     /* empty */
-    | LBRACKET opt_constant RBRACKET
+    | ident_list
     ;
 
-opt_constant :
-    /* empty */
-    | constant
+ident_list:
+    IDENTIFIER
+    | ident_list COMMA IDENTIFIER
     ;
 
-opt_ival_list :
+opt_ival_list:
     /* empty */
     | ival_list
     ;
 
-ival_list :
+ival_list:
     ival
     | ival_list COMMA ival
     ;
 
-opt_param_list :
+ival :
+    constant
+    | IDENTIFIER
+    ; 
+
+opt_const_decl:
     /* empty */
-    | param_list
+    | LBRACKET opt_const RBRACKET
     ;
 
-param_list :
-    IDENTIFIER
-    | param_list COMMA IDENTIFIER
+opt_const:
+    /* empty */
+    | constant
     ;
 
-statement :
-    AUTO var_decl_list SEMICOLON
-    | EXTRN ident_list SEMICOLON
+constant:
+    CHARCONST
+    | STRING
+    ;    
+
+var_decl:
+    IDENTIFIER opt_const
+    ;
+
+var_decl_list:
+    var_decl
+    | var_decl_list COMMA var_decl   
+    ;
+
+opt_statement:
+    /* empty */
+    | statement
+    ;
+
+else_statement:
+    ELSE statement
+    ;
+
+opt_else_statement:
+    /* empty */
+    | else_statement
+    ;
+
+opt_bracket_rvalue:
+    /* empty */
+    | LPAREN rvalue RPAREN
+    ;
+
+opt_rvalue:
+    /* empty */
+    | rvalue
+    ;
+
+statement:
+    AUTO var_decl_list SEMICOLON statement
+    | EXTRN ident_list SEMICOLON statement
     | IDENTIFIER COLON statement
     | CASE constant COLON statement
     | LBRACE opt_statement RBRACE
-    | IF LPAREN rvalue RPAREN statement %prec IFX
-    | IF LPAREN rvalue RPAREN statement ELSE statement
+    | IF LPAREN rvalue RPAREN statement opt_else_statement
     | WHILE LPAREN rvalue RPAREN statement
     | SWITCH rvalue statement
     | GOTO rvalue SEMICOLON
@@ -114,116 +150,70 @@ statement :
     | opt_rvalue SEMICOLON
     ;
 
-opt_rvalue : 
-   /* empty */
-   | rvalue
-   ;
-
-opt_bracket_rvalue : 
-    /* empty */
-    | LPAREN rvalue RPAREN %prec PAREN
-    ;
-
-opt_statement : 
-    /* empty */
-    | statement
-    ;
-
-ident_list : 
-    IDENTIFIER
-    | ident_list COLON IDENTIFIER
-    ;
-
-function_call : 
-    rvalue LPAREN opt_rvalue_list RPAREN 
-    ; 
-
-rvalue : 
-    LPAREN rvalue RPAREN
-    | assign
-    | binary
-    | lvalue %prec LVALUE_ONLY
-    | constant
-    | inc_dec lvalue %prec UNARY 
-    | lvalue inc_dec %prec UNARY
-    | unary rvalue %prec UNARY
-    | rvalue QUESTION rvalue COLON rvalue %prec TERNARY 
-    | function_call
-    ;
-
-assign :
-    lvalue ASSIGN rvalue %prec ASSIGN
-    | lvalue ASSIGN_OR rvalue %prec ASSIGN_OR 
+assign:
+    lvalue ASSIGN rvalue %prec ASSIGN 
+    | lvalue ASSIGN_OR rvalue %prec ASSIGN_OR
     | lvalue ASSIGN_LSHIFT rvalue %prec ASSIGN_LSHIFT
     | lvalue ASSIGN_RSHIFT rvalue %prec ASSIGN_RSHIFT
     | lvalue ASSIGN_MINUS rvalue %prec ASSIGN_MINUS
     | lvalue ASSIGN_PLUS rvalue %prec ASSIGN_PLUS
     | lvalue ASSIGN_MOD rvalue %prec ASSIGN_MOD
-    | lvalue ASSIGN_MUL rvalue %prec ASSIGN_MUL    
+    | lvalue ASSIGN_MUL rvalue %prec ASSIGN_MUL   
     ;
 
-binary :
-    rvalue OR rvalue %prec OR
-    | rvalue AMPERSAND rvalue %prec AMPERSAND 
+inc_dec:
+    INC
+    | DEC
+    ;
+
+opt_rvalue_list:
+    /* empty */
+    | rvalue_list
+    ;    
+
+rvalue_list:
+    rvalue
+    | rvalue_list COMMA rvalue
+    ;
+
+rvalue:
+    LPAREN rvalue RPAREN %prec LPAREN
+    | lvalue 
+    | constant
+    | assign %prec ASSIGN
+    | binary 
+    | MINUS rvalue %prec UNARY
+    | NOT rvalue %prec UNARY
+    | rvalue STAR rvalue %prec STAR
+    | lvalue inc_dec %prec INC
+    | inc_dec lvalue %prec INC
+    | AMPERSAND lvalue %prec ADDR_OF
+    | rvalue QUESTION rvalue COLON rvalue
+    | rvalue LPAREN opt_rvalue_list RPAREN %prec FUNC_CALL
+
+binary:
+     rvalue OR rvalue %prec OR
+    | rvalue AMPERSAND rvalue %prec AMPERSAND
     | rvalue EQ rvalue %prec EQ
     | rvalue NEQ rvalue %prec NEQ
     | rvalue LT rvalue %prec LT
     | rvalue LE rvalue %prec LE
     | rvalue GT rvalue %prec GT
-    | rvalue GE rvalue %prec GE
+    | rvalue GE rvalue %prec GE 
     | rvalue LSHIFT rvalue %prec LSHIFT
     | rvalue RSHIFT rvalue %prec RSHIFT
     | rvalue MINUS rvalue %prec MINUS
     | rvalue PLUS rvalue %prec PLUS
     | rvalue MOD rvalue %prec MOD
-    | rvalue STAR rvalue %prec STAR
     | rvalue SLASH rvalue %prec SLASH
     ;
-opt_rvalue_list : 
-    /* empty */
-    | rvalue_list
-    ;
 
-rvalue_list :
-    rvalue
-    | rvalue_list COLON rvalue
-    ;
-
-inc_dec : 
-    INC
-    | DEC
-    ;
-
-unary :
-    AMPERSAND %prec ADDR_OF
-    | MINUS %prec UNARY
-    | NOT
-    ;
-
-lvalue : 
+lvalue:
     IDENTIFIER
     | STAR rvalue %prec DEREF
     | rvalue LBRACKET rvalue RBRACKET
     ;
 
-opt_const : 
-    /* empty */
-    | constant
-    ;
-
-var_decl_list :
-    var_decl
-    | var_decl_list COMMA var_decl
-    ;
-
-var_decl :
-    IDENTIFIER opt_const
-    ;
-
-constant : 
-    CHARCONST
-    | STRING
-    ;
 %%
 
 int main() {
