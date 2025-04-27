@@ -7,6 +7,7 @@ void yyerror(const char *s) {
     fprintf(stderr, "Parse error: %s\n", s);
 }
 %}
+/* %glr-parser */
 %define parse.trace
 
 %union {
@@ -30,24 +31,26 @@ void yyerror(const char *s) {
 %token ASSIGN_MOD ASSIGN_MUL
 %token ERROR
 
+%start program
+
 %precedence LVALUE_ONLY
 %left COMMA
 %right ASSIGN ASSIGN_OR ASSIGN_LSHIFT ASSIGN_RSHIFT ASSIGN_MINUS ASSIGN_PLUS ASSIGN_MOD ASSIGN_MUL
 %right QUESTION COLON TERNARY
-%left EQ NEQ
-%left LT LE GT GE
-%left PLUS MINUS
-%left STAR SLASH MOD //star is MUL
 %left OR
 %left NOT
 %left AMPERSAND //binary and
+%left EQ NEQ
+%left LT LE GT GE
 %left LSHIFT RSHIFT 
+%left PLUS MINUS
+%left STAR SLASH MOD //star is MUL
 %precedence BINARY
 %right INC DEC UNARY DEREF ADDR_OF
-%left LBRACKET RBRACKET LPAREN RPAREN
-%left FUNC_CALL
+%left LBRACKET RBRACKET LPAREN RPAREN PRIMARY
 
 %%
+
 
 program:
     opt_definition
@@ -60,7 +63,7 @@ opt_definition:
 
 definition:
     IDENTIFIER opt_const_decl opt_ival_list SEMICOLON
-    | IDENTIFIER LBRACE opt_ident_list RBRACE statement 
+    | IDENTIFIER LPAREN opt_ident_list RPAREN statement 
     ;
 
 opt_ident_list:
@@ -140,11 +143,9 @@ statement:
     AUTO var_decl_list SEMICOLON statement
     | EXTRN ident_list SEMICOLON statement
     | IDENTIFIER COLON statement
-    | CASE constant COLON statement
     | LBRACE opt_statement RBRACE
     | IF LPAREN rvalue RPAREN statement opt_else_statement
     | WHILE LPAREN rvalue RPAREN statement
-    | SWITCH rvalue statement
     | GOTO rvalue SEMICOLON
     | RETURN opt_bracket_rvalue SEMICOLON
     | opt_rvalue SEMICOLON
@@ -176,23 +177,28 @@ rvalue_list:
     | rvalue_list COMMA rvalue
     ;
 
+inc_dec_expression:
+    lvalue inc_dec %prec INC
+    | inc_dec lvalue %prec INC
+    ;
+
 rvalue:
     LPAREN rvalue RPAREN %prec LPAREN
-    | lvalue 
+    | lvalue
     | constant
-    | assign %prec ASSIGN
+    | assign 
     | binary 
+    | inc_dec_expression
     | MINUS rvalue %prec UNARY
     | NOT rvalue %prec UNARY
-    | rvalue STAR rvalue %prec STAR
-    | lvalue inc_dec %prec INC
-    | inc_dec lvalue %prec INC
     | AMPERSAND lvalue %prec ADDR_OF
     | rvalue QUESTION rvalue COLON rvalue
-    | rvalue LPAREN opt_rvalue_list RPAREN %prec FUNC_CALL
+    | rvalue LPAREN opt_rvalue_list RPAREN 
+    ;
 
 binary:
      rvalue OR rvalue %prec OR
+    | rvalue STAR rvalue %prec STAR
     | rvalue AMPERSAND rvalue %prec AMPERSAND
     | rvalue EQ rvalue %prec EQ
     | rvalue NEQ rvalue %prec NEQ
