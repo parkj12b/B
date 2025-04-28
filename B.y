@@ -7,7 +7,7 @@ void yyerror(const char *s) {
     fprintf(stderr, "Parse error: %s\n", s);
 }
 %}
-/* %glr-parser */
+%glr-parser
 %define parse.trace
 
 %union {
@@ -33,7 +33,7 @@ void yyerror(const char *s) {
 
 %start program
 
-%precedence LVALUE_ONLY
+%precedence LOWEST
 %left COMMA
 %right ASSIGN ASSIGN_OR ASSIGN_LSHIFT ASSIGN_RSHIFT ASSIGN_MINUS ASSIGN_PLUS ASSIGN_MOD ASSIGN_MUL
 %right QUESTION COLON TERNARY
@@ -45,20 +45,15 @@ void yyerror(const char *s) {
 %left LSHIFT RSHIFT 
 %left PLUS MINUS
 %left STAR SLASH MOD //star is MUL
-%precedence BINARY
 %right INC DEC UNARY DEREF ADDR_OF
-%left LBRACKET RBRACKET LPAREN RPAREN PRIMARY
-
+%left LBRACKET RBRACKET LPAREN RPAREN
+%right THEN ELSE
 %%
 
 
 program:
-    opt_definition
-    ;
-
-opt_definition:
     /* empty */
-    | definition
+    | program definition
     ;
 
 definition:
@@ -104,6 +99,7 @@ opt_const:
 constant:
     CHARCONST
     | STRING
+    | NUMBER
     ;    
 
 var_decl:
@@ -120,14 +116,6 @@ opt_statement:
     | statement
     ;
 
-else_statement:
-    ELSE statement
-    ;
-
-opt_else_statement:
-    /* empty */
-    | else_statement
-    ;
 
 opt_bracket_rvalue:
     /* empty */
@@ -144,7 +132,8 @@ statement:
     | EXTRN ident_list SEMICOLON statement
     | IDENTIFIER COLON statement
     | LBRACE opt_statement RBRACE
-    | IF LPAREN rvalue RPAREN statement opt_else_statement
+    | IF LPAREN rvalue RPAREN statement %prec THEN
+    | IF LPAREN rvalue RPAREN statement ELSE statement %prec ELSE
     | WHILE LPAREN rvalue RPAREN statement
     | GOTO rvalue SEMICOLON
     | RETURN opt_bracket_rvalue SEMICOLON
@@ -184,15 +173,15 @@ inc_dec_expression:
 
 rvalue:
     LPAREN rvalue RPAREN %prec LPAREN
-    | lvalue
+    | lvalue %prec LOWEST
     | constant
-    | assign 
+    | assign
     | binary 
     | inc_dec_expression
     | MINUS rvalue %prec UNARY
     | NOT rvalue %prec UNARY
     | AMPERSAND lvalue %prec ADDR_OF
-    | rvalue QUESTION rvalue COLON rvalue
+    | rvalue QUESTION rvalue COLON rvalue %prec TERNARY
     | rvalue LPAREN opt_rvalue_list RPAREN 
     ;
 

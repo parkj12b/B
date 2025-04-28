@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-extern YYSTYPE yylval;
+extern int yylex(void);
+extern char *yytext;  // Flex가 제공하는 현재 토큰 문자열
+extern YYSTYPE yylval; // yylval은 토큰의 값 (숫자라면 정수값, 문자열이라면 포인터)
 %}
 
 %option noyywrap nodefault yylineno
@@ -75,7 +77,7 @@ extern YYSTYPE yylval;
 ":"         { return COLON; }
 "?"         { return QUESTION; }
 
-[1-9][0-9]* {
+[0-9]* {
     yylval.ival = atoi(yytext);
     return NUMBER;
 }
@@ -131,7 +133,7 @@ extern YYSTYPE yylval;
 
 [ \t\r]+                ;  // skip whitespace
 
-\n  { yylineno++; }
+\n  { }
 
 . {
     fprintf(stderr, "Unknown character: '%s' at line %d\n", yytext, yylineno);
@@ -139,4 +141,20 @@ extern YYSTYPE yylval;
 }
 
 %%
-
+/* 
+int main() {
+    int token;
+    while ((token = yylex()) != 0) {  // 0 means end of input (EOF)
+        printf("Token: %d (Text: %s)", token, yytext);
+        
+        // Print the value of yylval based on the token type
+        if (token == NUMBER) {    // Example: If the token is a constant integer
+            printf(" (Value: %d)", yylval.ival);
+        } else if (token == IDENTIFIER) { // Example: If the token is an identifier
+            printf(" (Identifier: %s)", yylval.sval);
+        }
+        
+        printf("\n");
+    }
+    return 0;
+} */

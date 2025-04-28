@@ -17,6 +17,11 @@ $(NAME): $(FLEX_SRC) $(BISON_SRC)
 	flex B.l
 	$(CC) $(CFLAGS) lex.yy.c B.tab.c
 
+nocounter: $(FLEX_SRC) $(BISON_SRC)
+	bison -d B.y
+	flex B.l
+	$(CC) $(CFLAGS) lex.yy.c B.tab.c
+
 clean:
 	rm -rf *.tab.*
 	rm -rf lex.yy.c
@@ -24,3 +29,5 @@ clean:
 fclean:
 	$(MAKE) clean
 	rm -rf $(NAME)
+
+.PHONY: all clean fclean no_counter
