@@ -3,9 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 extern int yylex(void);
-extern char *yytext;  // Flex가 제공하는 현재 토큰 문자열
+extern char *yytext;  // Flex
 extern YYSTYPE yylval; // yylval은 토큰의 값 (숫자라면 정수값, 문자열이라면 포인터)
+
+int process_charconst(const char* text);
+
 %}
 
 %option noyywrap nodefault yylineno
@@ -43,7 +47,7 @@ extern YYSTYPE yylval; // yylval은 토큰의 값 (숫자라면 정수값, 문�
 "=+"        { return ASSIGN_PLUS; }
 "=%"        { return ASSIGN_MOD; }
 "=*"        { return ASSIGN_MUL; }
-"=/"        { return ERROR; }
+"=/"        { return ASSIGN_DIVIDE; }
 
 "|"         { return OR; } //binary
 "&"         { return AMPERSAND; }
@@ -86,45 +90,14 @@ extern YYSTYPE yylval; // yylval은 토큰의 값 (숫자라면 정수값, 문�
     yylval.sval = strdup(yytext);
     return IDENTIFIER;
 }
-'[^'*]'     { yylval.ival = yytext[1]; // Simple char const: 'x' 
-    return CHARCONST; }
 
-'\*\*'         { yylval.ival = '*'; // Escaped '*': '**' 
+'([^'\\]|\\.)*'   {
+    yylval.ival = process_charconst(yytext); // Simple char const: 'x' 
+    if (yylval.ival == ERROR) {
+        fprintf(stderr, "Invalid character constant: line %d\n", yylineno);
+        return ERROR;
+    }
     return CHARCONST; }
-
-'\*0' { yylval.ival = 0; // Null character: '*0' 
-    return CHARCONST; }
-
-'\*e' { yylval.ival = -1; // EOF, system-specific (often -1 or 255) 
-    return CHARCONST; }
-
-'\*\(' { yylval.ival = 123; // Left brace: '(' 
-    return CHARCONST; }
-
-'\*\)' { yylval.ival = 124; // Right brace: ')' 
-    return CHARCONST; }
-
-'\*t' { yylval.ival = '\t'; // Tab: '*t' 
-    return CHARCONST; }
-
-'\*'' { yylval.ival = '\''; // Single quote: ''' 
-    return CHARCONST; }
-
-'\*\"' { yylval.ival = '\"'; // Double quote: '"' 
-    return CHARCONST; }
-
-'\*n' { yylval.ival = '\n'; // Newline: '*n' 
-    return CHARCONST; }
-
-'\*.' { 
-    fprintf(
-        stderr, 
-        "Invalid escape sequence: '%s' at line %d\n", 
-        yytext, 
-        yylineno
-    ); 
-    return ERROR; 
-}
 
 \"[^\"]*\" {
     yylval.sval = strdup(yytext);
@@ -141,6 +114,63 @@ extern YYSTYPE yylval; // yylval은 토큰의 값 (숫자라면 정수값, 문�
 }
 
 %%
+
+int is_valid_escape(char c) {
+    switch (c) {
+        case '0':
+        case 'e':
+        case '(':
+        case ')':
+        case 't': 
+        case '\\':
+        case '\'': 
+        case '"': 
+        case 'n':
+            return 1;  // valid escape
+        default:
+            return 0;
+    }
+}
+
+int process_charconst(const char* text) {
+    int logical_chars = 0;
+    int char_value = 0;
+    int is_escape_char = 0;
+    const char* p = text + 1;  // skip opening '
+
+    while (*p && *p != '\'') {  // until closing '
+        if (*p == '\\') {
+            p++;  // skip '\'
+            if (*p == '\0' || !is_valid_escape(*p)) {
+                fprintf(stderr, "Invalid escape sequence in char constant\n");
+                return ERROR;
+            }
+            char_value << 1;
+            char_value |= *p;  // store the escaped char
+            p++;  // consume escaped char
+            logical_chars++;
+        } else {
+            char_value << 1;
+            char_value |= *p;
+            p++;  // normal char
+            logical_chars++;
+        }
+        if (logical_chars > 2) {
+            fprintf(stderr, "Too many characters in char constant\n");
+            return ERROR;
+        }
+    }
+
+    if (logical_chars == 0) {
+        fprintf(stderr, "Empty character constant\n");
+        return ERROR;
+    }
+
+    return char_value; // Return your token
+}
+
+
+
 /* 
 int main() {
     int token;

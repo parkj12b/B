@@ -251,8 +251,8 @@ mapch(c) {
     if (a=='t')
       return('*t');
 
-    if (a=='r')
-      return('*r');
+    /* if (a=='r')
+      return('*r'); */
 
     if (a=='n')
       return('*n');

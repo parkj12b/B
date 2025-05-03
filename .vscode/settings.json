@@ -1,0 +1,15 @@
+{
+  "files.associations": {
+    "*.sqlbook": "sql",
+    "*.ndjson": "jsonl",
+    "*.dbclient-js": "javascript",
+    "xmalloc.h": "c",
+    "error.h": "c",
+    "hash_table.h": "c",
+    "string.h": "c",
+    "compiler_struct.h": "c",
+    "string_table.h": "c",
+    "typeinfo": "c",
+    "vector.h": "c"
+  }
+}
