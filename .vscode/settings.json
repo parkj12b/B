@@ -10,6 +10,11 @@
     "compiler_struct.h": "c",
     "string_table.h": "c",
     "typeinfo": "c",
-    "vector.h": "c"
+    "vector.h": "c",
+    "symbol_table.h": "c",
+    "compare": "c",
+    "type_traits": "c",
+    "b.tab.h": "c",
+    "stdio.h": "c"
   }
 }

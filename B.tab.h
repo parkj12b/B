@@ -118,28 +118,19 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 30 "src/B.y"
+#line 32 "src/B.y"
 
     /* primitive constants */
-    size_t         ival;
+    size_t          ival;
     char            *sval;
 
-    /* constants */
-    const_value_t   const;
+    opt_t           opt;    // for optional values
+    list_t          list;   // for list values
+    const_t         constant; // for constant types
+    statement_t    statement; // for statement types
+    expr_t         expr;   // for expression types
 
-    /* optional */
-    optional_t      opt;
-
-    int             size;
-    char            *code;
-
-    /* lists */
-    list_t          list;
-
-    expr_t          expr;
-    definition_t    definition;
-
-#line 143 "B.tab.h"
+#line 134 "B.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

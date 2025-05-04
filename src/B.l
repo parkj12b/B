@@ -1,8 +1,8 @@
 %{
-#include "B.tab.h"   // Bison token definitions
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "B.tab.h"   // Bison token definitions
 
 extern int yylex(void);
 extern char *yytext;  // Flex

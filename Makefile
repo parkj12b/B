@@ -8,7 +8,7 @@ BISON_SRC = B.y
 
 BISON_SRCS = $(addprefix src/, $(BISON_SRC))
 
-BISON_FLAG = -d -Wcounterexamples --report=all -Iinclude
+BISON_FLAG = -d -Wcounterexamples --report=all
 
 TEST_SRC = test_hash_table.c test_main.c hash_table.c
 

@@ -5,115 +5,64 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/04/30 19:27:41 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/02 00:12:31 by minsepar         ###   ########.fr       */
+/*   Created: 2025/05/04 23:26:15 by minsepar          #+#    #+#             */
+/*   Updated: 2025/05/04 23:50:23 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef COMPILER_STRUCT_H
 #define COMPILER_STRUCT_H
 
-#include "B.tab.h"
-#include "vector.h"
-
-typedef enum
-{
-	CONST_INT,
-	CONST_CHAR,
-	CONST_STRING,
-	LABEL,
-	VALUE,
-	ARGUMENT,
-} type_t;
-
-typedef struct
-{
-	type_t type;
-	union
-	{
-		int int_val;
-		char *str_val;
-	};
-} const_value_t;
-
-/**
- * @param data	Pointer to the data of the optional value.
- * 				This can be NULL if the value is not present.
- */
-typedef struct
+typedef struct opt_s
 {
 	void *data;
-} optional_t;
+} opt_t;
 
-/* linked list for List types */
+/* list_t */
 
-typedef struct
+typedef struct node_s
 {
-	node_t *next;
+	struct node_s *next;
 	void *data;
 } node_t;
 
-typedef struct
+typedef struct list_s
 {
-	int size;
+	size_t size;
 	node_t *head;
 	node_t *tail;
 } list_t;
 
-/**
- *
- */
-typedef struct
-{
-	char *place;
-	char *code;
-	int is_lvalue;
-	int is_const;
-	int value;
-	int type;
-} expr_t;
+/* const_t */
 
 typedef enum
 {
-	STORAGE_AUTO = AUTO,
-	STORAGE_EXTRN = EXTRN
-} storage_class_t;
+	CONST_INT,
+	CONST_FLOAT,
+	CONST_STRING,
+	CONST_CHAR,
+	CONST_BOOL,
+} const_type_t;
 
-/* IDENTIFIER */
-/**
- * @param offset	Offset from stack base pointer (RBP) for local variables.
- *	 				For global variables, this is 0.
- */
-typedef struct Symbol
+typedef struct const_s
 {
-	char *name;
-	// storage_class_t	storage_class;
-	type_t type;
-	union
-	{
-		int stack_offset;
-		int arg_num;
-	};
+	int type;
+	void *value;
+} const_t;
 
-} symbol_t;
-
-typedef struct ival
+/* statement */
+// TODO: add statement types
+typedef struct statement_s
 {
-	type_t type; // have to know if it's label or value
-	union
-	{
-		size_t int_val;
-		char *str_val;
-	};
-} ival_t;
+	int type;
+	void *data;
+} statement_t;
 
-typedef struct definition
+/* expr */
+typedef struct expr_s
 {
-	var_str_t *code;
-} definition_t;
-
-void add_node(list_t *list, node_t *node);
-symbol_t *create_symbol(char *name, type_t type, int offset, int arg_num);
-node_t *create_node(void *data);
+	int type;
+	void *data;
+} expr_t;
 
 #endif

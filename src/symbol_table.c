@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/01 23:36:38 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/04 01:10:35 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,8 @@ void enter_scope(symbol_table_t *table)
 	new_scope = (symbol_table_t *)xmalloc(sizeof(symbol_table_t));
 	new_scope->table = ht_create_table();
 	new_scope->parent = table;
+	current_depth++;
+	offset_stack[current_depth] = 8;
 	table = new_scope;
 }
 
@@ -44,6 +46,7 @@ void exit_scope(void)
 	current_table = old_table->parent;
 	ht_destroy_table(old_table->table);
 	free(old_table);
+	current_depth--;
 }
 
 void add_symbol(char *name, void *value)
@@ -58,23 +61,24 @@ void add_symbol(char *name, void *value)
 	ht_insert(current_table->table, name, value);
 }
 
-void *get_symbol(char *name)
+void *get_symbol(char *name, int *scope)
 {
 	void *data = ht_search(current_table->table, name);
 
 	if (data != NULL)
 	{
+		if (scope)
+			*scope = LOCAL;
 		return data;
 	}
 
 	if (current_table->table != global_table->table)
-	{
 		data = ht_search(global_table->table, name);
-	}
 	if (data != NULL)
 	{
+		if (scope)
+			*scope = GLOBAL;
 		return data;
 	}
 	return NULL;
 }
-

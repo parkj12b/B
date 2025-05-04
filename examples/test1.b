@@ -1,7 +1,6 @@
-foo( arg1, arg2 ) {
-	printf("%s %s*n", arg1, arg2);
-}
-
+x;
 main() {
-	foo("hello", "world");
+	extrn x;
+    x = 5;
+	printf("%d*n", x);
 }
