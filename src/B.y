@@ -3,12 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <assert.h>
 #include "hash_table.h"
 #include "symbol_table.h"
 #include "vector.h"
 #include "xmalloc.h"
 #include "codegen.h"
-#include "compiler_struct.h"
+#include "parser.h"
 
 int yylex(void);
 extern int  yylineno;
@@ -16,6 +17,10 @@ extern FILE *yyin;
 FILE        *out = NULL;
 void yyerror(const char *msg);
 
+/**
+ * Since all table data is needed till the end of the program,
+ * there is no need to free the symbol table.
+*/
 symbol_table_t *global_table = NULL;
 symbol_table_t *current_table = NULL;
 htable_t       *string_table;
@@ -26,8 +31,12 @@ char *buffer[512];
 int offset_stack[512];
 int current_depth = 0;
 %}
+
+%code requires {
+    #include "compiler_struct.h"
+}
 /* %glr-parser */
-%define parse.trace
+/* %define parse.trace */
 
 %union {
     /* primitive constants */
@@ -39,6 +48,7 @@ int current_depth = 0;
     const_t         constant; // for constant types
     statement_t    statement; // for statement types
     expr_t         expr;   // for expression types
+    ival_t         ival_s;   // for ival types
 }
 
 %token <ival> NUMBER CHARCONST
@@ -57,12 +67,13 @@ int current_depth = 0;
 %token ASSIGN_MOD ASSIGN_MUL ASSIGN_DIVIDE
 %token ERROR
 
-%type <opt> opt_ident_list opt_ival_list opt_const opt_statement 
-%type <opt> opt_paren_expr opt_expr opt_expr_list
+%type <opt> opt_ident_list opt_ival_list opt_expr_list
+%type <opt> opt_paren_expr opt_expr opt_const opt_statement 
 %type <list> ident_list ival_list var_decl_list expr_list
 %type <constant> constant
 %type <statement> statement
 %type <expr> expr
+%type <ival_s> ival
 
 %left COMMA
 %right ASSIGN ASSIGN_OR ASSIGN_LSHIFT ASSIGN_RSHIFT ASSIGN_MINUS ASSIGN_PLUS ASSIGN_MOD ASSIGN_MUL ASSIGN_DIVIDE
@@ -78,7 +89,16 @@ int current_depth = 0;
 %right INC DEC UNARY DEREF ADDR_OF
 %left LBRACKET RBRACKET LPAREN RPAREN
 %right THEN ELSE
-
+%code {
+    /**
+     * push ebp
+     * mov ebp, esp
+     * sub esp, <size>
+     * ...
+     * leave = resetting stack pointer and restoring caller's base pointer
+     * ret
+    */
+}
 %%
 
 program:
@@ -88,28 +108,35 @@ program:
     }
     ;
 
+    /* 7.0 external definition */
+    /* main(); exit() */
 definition:
+    /* 7.1 simple definition */
+    IDENTIFIER opt_ival_list SEMICOLON {
+        
+    }
     /* 7.2 vector definitions */
-    IDENTIFIER LBRACKET opt_const RBRACKET opt_ival_list SEMICOLON {
+    | IDENTIFIER LBRACKET opt_const RBRACKET opt_ival_list SEMICOLON {
         /* identifier */
         
 
     }
     /* 7.3 function definitions */
     | IDENTIFIER LPAREN opt_ident_list {
-        
-
+        enter_scope(current_table);
+        assert(current_table != global_table);
     } RPAREN statement {
         exit_scope();
-    }
+        assert(current_table == global_table);
+}
     ;
 
 opt_ident_list:
     /* empty */ {
-        $$.data = NULL;
+        $$.kind = OPT_NONE;
     }
     | ident_list {
-        $$.data = $1;
+        $$.value.list = $1;
     }
     ;
 
@@ -125,46 +152,72 @@ ident_list:
 
 opt_ival_list:
     /* empty */ {
-        $$.data = NULL;
+        $$.kind = OPT_NONE;
     }
     | ival_list {
-        $$.data = $1;
+        $$.value.list = $1;
     }
     ;
 
 ival_list:
     ival {
-        
+        ival_t *ival = (ival_t *)xmalloc(sizeof(ival_t));
+        memcpy(ival, &$1, sizeof(ival_t));
+        node_t *node = create_node(ival);
+
+        ival_t *test_val = node->data;
+        printf("%s\n", (char *)(test_val->value.constant.value));
+        printf("%p\n", &($$));
+        $$.size = 0;
+        $$.head = NULL;
+        $$.tail = NULL;
+        add_node(&($$), node);
     }
     | ival_list COMMA ival {
-        
+        // ival_t *ival = (ival_t *)xmalloc(sizeof(ival_t));
+        // memcpy(ival, &$3, sizeof(ival_t));
+        // node_t *node = create_node(ival);
+
+        // add_node($1, node);
+        // $$ = $1;
     }
     ;
 
 ival :
-    constant { 
-        
+    constant {
+        $$.type = IVAL_CONST;
+        $$.value.constant = $1;
     }
+    /* ival IDENTIFIERS can only be externally defined */
     | IDENTIFIER {
-        
+        $$.type = IVAL_IDENTIFIER;
+        $$.value.identifier = $1;
     }
     ; 
 
 opt_const:
     /* empty */ {
-        $$.data = NULL;
+        $$.kind = OPT_NONE;
     }
     | constant { 
-        $$.data = $1;
+        $$.value.constant = $1;
     }
     ;
 
 constant:
     CHARCONST {
+        $$.type = CONST_CHAR;
+        $$.value = $1;
+
     }
     | STRING {
+        $$.type = CONST_STRING;
+        const char *label = st_get_label($1);
+        $$.value = (size_t)label;
     }
     | NUMBER {
+        $$.type = CONST_INT;
+        $$.value = $1;
     }
     ;    
 
@@ -182,29 +235,29 @@ var_decl_list:
 
 opt_statement:
     /* empty */ {
-        $$.data = NULL;
+        $$.kind = OPT_NONE;
     }
     | opt_statement statement {
-        $$.data = $2;
+        $$.value.statement = $2;
     }
     ;
 
 
 opt_paren_expr:
     /* empty */ {
-        $$.data = NULL;
+        $$.kind = OPT_NONE;
     }
     | LPAREN expr RPAREN {
-        $$.data = $2;
+        $$.value.expr = $2;
     }
     ;
 
 opt_expr:
     /* empty */ {
-        $$.data = NULL;
+        $$.kind = OPT_NONE;
     }
     | expr {
-        $$.data = $1;
+        $$.value.expr = $1;
     }
     ;
 
@@ -263,10 +316,10 @@ assign:
 
 opt_expr_list:
     /* empty */ {
-        $$.data = NULL;
+        $$.kind = OPT_NONE;
     }
     | expr_list {
-        $$.data = $1;
+        $$.value.list = $1;
     }
     ;    
 
@@ -281,6 +334,7 @@ expr_list:
 
 expr:
     constant {
+
     }
     | IDENTIFIER {
     }
@@ -353,13 +407,12 @@ void yyerror(const char *msg) {
     fprintf(stderr, "Error at line %d: %s\n", yylineno, msg);
 }
 
-int main(int argc, char **argv, char **envp) {
+int main(int argc, char **argv) {
     const char *input_file = NULL;
     const char *output_file = NULL;
 
-    string_table = ht_create_table();
     // debugging flag
-    yydebug = 1;
+    /* yydebug = 1; */
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
             output_file = argv[++i];
@@ -391,6 +444,9 @@ int main(int argc, char **argv, char **envp) {
 
     // Initialize the symbol table
     init_symbol_table();
+    string_table = ht_create_table();
+
+    init_assembly();
 
     // Start parsing
     int result = yyparse();

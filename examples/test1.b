@@ -1,6 +1,2 @@
-x;
-main() {
-	extrn x;
-    x = 5;
-	printf("%d*n", x);
-}
+a "hello world", "bye world" ;
+b "hello world";

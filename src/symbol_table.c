@@ -6,13 +6,15 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/04 01:10:35 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/05 23:27:04 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdlib.h>
 #include "symbol_table.h"
 #include "compiler_struct.h"
+#include "xmalloc.h"
+#include "parser.h"
 
 void init_symbol_table(void)
 {
@@ -31,7 +33,7 @@ void enter_scope(symbol_table_t *table)
 	new_scope->parent = table;
 	current_depth++;
 	offset_stack[current_depth] = 8;
-	table = new_scope;
+	current_table = new_scope;
 }
 
 void exit_scope(void)
@@ -40,8 +42,7 @@ void exit_scope(void)
 
 	if (old_table->parent == NULL)
 	{
-		perror("Cannot exit global scope");
-		exit(1); // TODO: handle error
+		yyerror("Cannot exit global scope");
 	}
 	current_table = old_table->parent;
 	ht_destroy_table(old_table->table);
@@ -55,8 +56,7 @@ void add_symbol(char *name, void *value)
 
 	if (data != NULL)
 	{
-		perror(DUPSYM);
-		exit(1); // TODO: handle error
+		yyerror(DUPSYM);
 	}
 	ht_insert(current_table->table, name, value);
 }

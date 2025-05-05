@@ -15,6 +15,8 @@
     "compare": "c",
     "type_traits": "c",
     "b.tab.h": "c",
-    "stdio.h": "c"
+    "stdio.h": "c",
+    "parser.h": "c",
+    "inttypes.h": "c"
   }
 }

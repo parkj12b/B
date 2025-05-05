@@ -6,17 +6,12 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/04 23:26:15 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/04 23:50:23 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/06 01:32:21 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef COMPILER_STRUCT_H
 #define COMPILER_STRUCT_H
-
-typedef struct opt_s
-{
-	void *data;
-} opt_t;
 
 /* list_t */
 
@@ -46,8 +41,8 @@ typedef enum
 
 typedef struct const_s
 {
-	int type;
-	void *value;
+	const_type_t type;
+	size_t value;
 } const_t;
 
 /* statement */
@@ -64,5 +59,54 @@ typedef struct expr_s
 	int type;
 	void *data;
 } expr_t;
+
+typedef enum
+{
+	OPT_NONE,
+} opt_kind_t;
+
+typedef struct opt_s
+{
+	opt_kind_t kind;
+	union
+	{
+		list_t list;
+		expr_t expr;
+		const_t constant;
+		statement_t statement;
+	} value;
+} opt_t;
+
+/* ival */
+
+typedef enum
+{
+	IVAL_CONST,
+	IVAL_IDENTIFIER,
+} ival_type_t;
+
+/**
+ * can be:
+ * - const_t
+ * - IDENTIFIER
+ * @param type		type of the value
+ * @param value		contains const_t or identifier
+ * 					identifier is a string reference to
+ * 					external symbol
+ */
+typedef struct ival_s
+{
+	ival_type_t type;
+	union
+	{
+		const_t constant;
+		char *identifier;
+	} value;
+} ival_t;
+
+/* compiler_struct.c */
+void add_node(list_t *list, node_t *node);
+node_t *create_node(void *data);
+list_t *create_list(void);
 
 #endif

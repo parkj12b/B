@@ -39,11 +39,17 @@
 # define YY_YY_B_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 1
+# define YYDEBUG 0
 #endif
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 35 "src/B.y"
+
+    #include "compiler_struct.h"
+
+#line 53 "B.tab.h"
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
@@ -118,7 +124,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 32 "src/B.y"
+#line 41 "src/B.y"
 
     /* primitive constants */
     size_t          ival;
@@ -129,8 +135,9 @@ union YYSTYPE
     const_t         constant; // for constant types
     statement_t    statement; // for statement types
     expr_t         expr;   // for expression types
+    ival_t         ival_s;   // for ival types
 
-#line 134 "B.tab.h"
+#line 141 "B.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

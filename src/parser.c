@@ -1,26 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   codegen.c                                          :+:      :+:    :+:   */
+/*   parser.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/04/30 14:32:54 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/05 01:21:44 by minsepar         ###   ########.fr       */
+/*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
+/*   Updated: 2025/05/05 23:32:45 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <stdio.h>
-#include <stdarg.h>
+#include "codegen.h"
 
-extern FILE	*out;
-
-void emit(const char *fmt, ...)
+void init_assembly(void)
 {
-	va_list args;
-	va_start(args, fmt);
-	vfprintf(out, fmt, args);
-	fprintf(out, "\n");
-	va_end(args);
+	emit(".intel_syntax noprefix");
+	emit(".text");
 }
-

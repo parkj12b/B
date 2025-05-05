@@ -6,10 +6,11 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 19:45:28 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/01 19:52:19 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/05 01:24:21 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <string.h>
 #include "vector.h"
 #include "xmalloc.h"
 

@@ -1,26 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   codegen.c                                          :+:      :+:    :+:   */
+/*   parser.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/04/30 14:32:54 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/05 01:21:44 by minsepar         ###   ########.fr       */
+/*   Created: 2025/05/05 01:19:36 by minsepar          #+#    #+#             */
+/*   Updated: 2025/05/05 23:33:33 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <stdio.h>
-#include <stdarg.h>
+#ifndef PARSER_H
+#define PARSER_H
 
-extern FILE	*out;
+void init_assembly(void);
+void yyerror(const char *msg);
 
-void emit(const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	vfprintf(out, fmt, args);
-	fprintf(out, "\n");
-	va_end(args);
-}
-
+#endif

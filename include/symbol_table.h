@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/04 01:06:45 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/05 23:26:53 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,11 +27,11 @@ typedef struct symbol_table_s
 	struct symbol_table_s *parent;
 } symbol_table_t;
 
-extern symbol_table_t *global_table;
-extern symbol_table_t *current_table;
 
 #define DUPSYM "Symbol already exists"
 
+extern symbol_table_t *global_table;
+extern symbol_table_t *current_table;
 extern int offset_stack[512];
 extern int current_depth;
 

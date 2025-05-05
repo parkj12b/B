@@ -1,6 +1,6 @@
 /* This program prints out the n-th fibonacci number. */
 
-/* n 10; */
+n 10;
 
 main() {
     extrn printf, fib, fib_rec, n;
