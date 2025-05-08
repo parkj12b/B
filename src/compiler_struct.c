@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/06 01:12:29 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/06 01:30:00 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/08 22:04:14 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,4 +55,34 @@ list_t *create_list(void)
 	list->head = NULL;
 	list->tail = NULL;
 	return list;
+}
+
+void	print_constant(const_t *constant)
+{
+	if (constant == NULL)
+	{
+		printf("NULL\n");
+		return;
+	}
+	switch (constant->type)
+	{
+	case CONST_INT:
+		printf("%zu\n", constant->value);
+		break;
+	// case CONST_FLOAT:
+	// 	printf("FLOAT: %zu\n", constant->value);
+	// 	break;
+	case CONST_CHAR:
+		printf("%zu\n", constant->value);
+		break;
+	case CONST_STRING:
+		printf("%s\n", (char *)constant->value);
+		break;
+	// case CONST_BOOL:
+	// 	printf("BOOL: %zu\n", constant->value);
+	// 	break;
+	default:
+		printf("UNKNOWN TYPE\n");
+		break;
+	}
 }

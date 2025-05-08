@@ -1,29 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   parser.c                                           :+:      :+:    :+:   */
+/*   parser_procedure.h                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/08 22:10:30 by minsepar         ###   ########.fr       */
+/*   Created: 2025/05/07 21:33:28 by minsepar          #+#    #+#             */
+/*   Updated: 2025/05/08 22:27:40 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <stdarg.h>
-#include <stdio.h>
-#include "codegen.h"
+#ifndef PARSER_PROCEDURE_H
+#define PARSER_PROCEDURE_H
 
-void init_assembly(void)
-{
-	emit(".intel_syntax noprefix");
-	emit("section .text");
-}
+#include "compiler_struct.h"
 
-void eprintf(const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-}
+void add_argument_symb(char *name, list_t *list);
+void add_auto_symb(list_t *var_decl_list);
+void add_extrn_symbol(list_t *ident_list);
+
+#endif

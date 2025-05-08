@@ -6,27 +6,55 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/05 23:26:53 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/07 22:45:35 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SYMBOL_TABLE_H
 #define SYMBOL_TABLE_H
 
+#include <stdlib.h>
 #include "hash_table.h"
 
 typedef enum
 {
-	GLOBAL,
 	LOCAL,
+	GLOBAL,
 } scope_t;
+
+typedef enum
+{
+	VAR,   // word
+	FUNC,  // word
+	ARRAY, // word * size
+} symbol_type_t;
+
+/**
+ * size and array size in linked list can be different
+ * if allocate size is bigger than initialization, allocate more
+ * space at end. else allocate for initialization.
+ */
+typedef struct symbol_s
+{
+	scope_t type;
+	size_t size; // size for array or function. 0 for variable
+	union
+	{
+		void *data; // data is null if not initialized
+		size_t constant;
+	} value;
+	union
+	{
+		const char *label;
+		size_t offset;
+	} location;
+} symbol_t;
 
 typedef struct symbol_table_s
 {
 	htable_t *table;
 	struct symbol_table_s *parent;
 } symbol_table_t;
-
 
 #define DUPSYM "Symbol already exists"
 
@@ -45,5 +73,7 @@ void exit_scope(void);
  * 			Returns scope of where it found the symbol.
  */
 void *get_symbol(char *name, int *scope);
+void print_symbol_table(symbol_table_t *s_table);
+void free_symbol_table(symbol_table_t *s_table);
 
 #endif

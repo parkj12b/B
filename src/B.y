@@ -10,6 +10,8 @@
 #include "xmalloc.h"
 #include "codegen.h"
 #include "parser.h"
+#include "parser_procedure.h"
+#include "compiler_struct.h"
 
 int yylex(void);
 extern int  yylineno;
@@ -46,9 +48,11 @@ int current_depth = 0;
     opt_t           opt;    // for optional values
     list_t          list;   // for list values
     const_t         constant; // for constant types
-    statement_t    statement; // for statement types
-    expr_t         expr;   // for expression types
-    ival_t         ival_s;   // for ival types
+    statement_t     statement; // for statement types
+    expr_t          expr;   // for expression types
+    ival_t          ival_s;   // for ival types
+    definition_t    definition; // for definition types
+    var_decl_t      var_decl; // for variable declaration types
 }
 
 %token <ival> NUMBER CHARCONST
@@ -74,6 +78,8 @@ int current_depth = 0;
 %type <statement> statement
 %type <expr> expr
 %type <ival_s> ival
+%type <definition> definition
+%type <var_decl> var_decl
 
 %left COMMA
 %right ASSIGN ASSIGN_OR ASSIGN_LSHIFT ASSIGN_RSHIFT ASSIGN_MINUS ASSIGN_PLUS ASSIGN_MOD ASSIGN_MUL ASSIGN_DIVIDE
@@ -113,22 +119,63 @@ program:
 definition:
     /* 7.1 simple definition */
     IDENTIFIER opt_ival_list SEMICOLON {
-        
+        symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+        if ($2.kind == OPT_NONE) {
+            add_symbol($1, symbol);
+        } else {
+            symbol->value.data = &($2.value.list);
+            symbol->size = $2.value.list.size;
+            // printf("size: %zu\n", symbol->size);
+            add_symbol($1, symbol);
+        }
+        free($1);
     }
     /* 7.2 vector definitions */
     | IDENTIFIER LBRACKET opt_const RBRACKET opt_ival_list SEMICOLON {
-        /* identifier */
-        
+        symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+        if ($3.kind != OPT_NONE) {
+            const_t *constant = &($3.value.constant);
+            if (constant->type != CONST_INT) {
+                yyerror("Array size must be an integer");
+            }
+            symbol->size = constant->value;
+        }
 
+        if ($5.kind == OPT_NONE) {
+            symbol->value.data = NULL;
+            add_symbol($1, symbol);
+        } else {
+            symbol->value.data = &($5.value.list);
+            add_symbol($1, symbol);
+        }
+        free($1);
     }
     /* 7.3 function definitions */
     | IDENTIFIER LPAREN opt_ident_list {
+        symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+
+        if ($3.kind == OPT_NONE) {
+            symbol->size = 0;
+        } else {
+            symbol->size = $3.value.list.size;
+        }
+        add_symbol($1, symbol);
+        emit("%s:", $1);
+        emit("push ebp");
+        emit("mov ebp, esp\n");
+
         enter_scope(current_table);
         assert(current_table != global_table);
+        if ($3.kind != OPT_NONE) {
+            add_argument_symb($1, &($3.value.list));
+        }
+        print_symbol_table(current_table);
+        free($1);
     } RPAREN statement {
         exit_scope();
         assert(current_table == global_table);
-}
+        
+    }
     ;
 
 opt_ident_list:
@@ -137,16 +184,24 @@ opt_ident_list:
     }
     | ident_list {
         $$.value.list = $1;
+        $$.kind = OPT_VALUE;
     }
     ;
 
 /* argument list for function */
 ident_list:
     IDENTIFIER {
-        
+        node_t *node = create_node($1);
+
+        $$.size = 0;
+        $$.head = NULL;
+        $$.tail = NULL;
+        add_node(&($$), node);
     }
     | ident_list COMMA IDENTIFIER {
-        
+        node_t *node = create_node($3);
+        add_node(&($1), node);
+        $$ = $1;
     }
     ;
 
@@ -156,6 +211,7 @@ opt_ival_list:
     }
     | ival_list {
         $$.value.list = $1;
+        $$.kind = OPT_VALUE;
     }
     ;
 
@@ -165,21 +221,21 @@ ival_list:
         memcpy(ival, &$1, sizeof(ival_t));
         node_t *node = create_node(ival);
 
-        ival_t *test_val = node->data;
-        printf("%s\n", (char *)(test_val->value.constant.value));
-        printf("%p\n", &($$));
+        // ival_t *test_val = node->data;
+        // printf("%s\n", (char *)(test_val->value.constant.value));
+        // printf("%p\n", &($$));
         $$.size = 0;
         $$.head = NULL;
         $$.tail = NULL;
         add_node(&($$), node);
     }
     | ival_list COMMA ival {
-        // ival_t *ival = (ival_t *)xmalloc(sizeof(ival_t));
-        // memcpy(ival, &$3, sizeof(ival_t));
-        // node_t *node = create_node(ival);
+        ival_t *ival = (ival_t *)xmalloc(sizeof(ival_t));
+        memcpy(ival, &$3, sizeof(ival_t));
+        node_t *node = create_node(ival);
 
-        // add_node($1, node);
-        // $$ = $1;
+        add_node(&($1), node);
+        $$ = $1;
     }
     ;
 
@@ -201,6 +257,7 @@ opt_const:
     }
     | constant { 
         $$.value.constant = $1;
+        $$.kind = OPT_VALUE;;
     }
     ;
 
@@ -214,6 +271,7 @@ constant:
         $$.type = CONST_STRING;
         const char *label = st_get_label($1);
         $$.value = (size_t)label;
+        // free($1);
     }
     | NUMBER {
         $$.type = CONST_INT;
@@ -221,15 +279,45 @@ constant:
     }
     ;    
 
+/* 6.2 automatic declaration */
+/*
+    opt_const defines the size of the variable
+    if opt_const is empty, size is a word
+*/
 var_decl:
     IDENTIFIER opt_const {
+        if ($2.kind != OPT_NONE) {
+            const_t *constant = (const_t *)xmalloc(sizeof(const_t));
+            memcpy(constant, &$2.value.constant, sizeof(const_t));
+            
+            $$.constant = constant;
+        } else {
+            $$.constant = NULL;
+        }
+        $$.name = $1;
+        // printf("name: %s\n", $1);
     }
     ;
 
+
 var_decl_list:
     var_decl {
+        var_decl_t *var_decl = (var_decl_t *)xmalloc(sizeof(var_decl_t));
+        memcpy(var_decl, &$1, sizeof(var_decl_t));
+        node_t *node = create_node(var_decl);
+        $$.size = 0;
+        $$.head = NULL;
+        $$.tail = NULL;
+        add_node(&($$), node);
     }
     | var_decl_list COMMA var_decl {
+        var_decl_t *var_decl = (var_decl_t *)xmalloc(sizeof(var_decl_t));
+        memcpy(var_decl, &$3, sizeof(var_decl_t));
+        node_t *node = create_node(var_decl);
+
+        add_node(&($1), node);
+        $$ = $1;
+
     }
     ;
 
@@ -239,6 +327,7 @@ opt_statement:
     }
     | opt_statement statement {
         $$.value.statement = $2;
+        $$.kind = OPT_VALUE;
     }
     ;
 
@@ -249,6 +338,7 @@ opt_paren_expr:
     }
     | LPAREN expr RPAREN {
         $$.value.expr = $2;
+        $$.kind = OPT_VALUE;
     }
     ;
 
@@ -258,22 +348,37 @@ opt_expr:
     }
     | expr {
         $$.value.expr = $1;
+        $$.kind = OPT_VALUE;
     }
     ;
 
+/* 5.0 statement */
 statement:
+    /* 6.2 automatic declaration */
     AUTO var_decl_list SEMICOLON {
-
+        add_auto_symb(&($2));
     } statement {
 
     }
     /* 6.1 external declaration */
+    /* 
+        external declaration sepcifies that each of the named
+        variable is of the external storage class. Declaration must
+        occur before the first use of the variable.
+    */
     | EXTRN ident_list SEMICOLON {
+        add_extrn_symbol(&($2));
     } statement {
 
     }
-    /*  */
+    /* 6.3 Internal Declaration (labels) */
+    /*
+        Deciding if label should collid with symbol definition is
+        implementation defined.
+        I am choosing to avoid collision.
+    */
     | IDENTIFIER {
+        
     } COLON statement {
         
     }
@@ -320,6 +425,7 @@ opt_expr_list:
     }
     | expr_list {
         $$.value.list = $1;
+        $$.kind = OPT_VALUE;
     }
     ;    
 
@@ -456,5 +562,11 @@ int main(int argc, char **argv) {
     if (out && out != stdout) {
         fclose(out);
     }
+
+    /* print_table(string_table); */
+    // Clean up
+    free_symbol_table(global_table);
+    ht_destroy_table(string_table);
+
     return result;
 }

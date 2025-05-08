@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:48:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/06 00:53:15 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/08 22:11:27 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "xmalloc.h"
 #include "hash_table.h"
 #include "inttypes.h"
+#include "parser.h"
 
 htable_t *ht_create_table(void)
 {
@@ -175,4 +176,13 @@ void ht_shrink_table(htable_t *table)
 			ht_insert(table, old_entries[i].key, old_entries[i].value);
 	}
 	free(old_entries);
+}
+
+void print_table(htable_t *table)
+{
+	for (int i = 0; i < table->capacity; i++)
+	{
+		if (table->entries[i].status == ACTIVE)
+			eprintf("Key: %s, Value: %p\n", table->entries[i].key, table->entries[i].value);
+	}
 }

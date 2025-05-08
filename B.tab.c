@@ -80,6 +80,8 @@
 #include "xmalloc.h"
 #include "codegen.h"
 #include "parser.h"
+#include "parser_procedure.h"
+#include "compiler_struct.h"
 
 int yylex(void);
 extern int  yylineno;
@@ -101,7 +103,7 @@ char *buffer[512];
 int offset_stack[512];
 int current_depth = 0;
 
-#line 105 "B.tab.c"
+#line 107 "B.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -219,7 +221,7 @@ typedef enum yysymbol_kind_t yysymbol_kind_t;
 
 
 /* Unqualified %code blocks.  */
-#line 92 "src/B.y"
+#line 98 "src/B.y"
 
     /**
      * push ebp
@@ -230,7 +232,7 @@ typedef enum yysymbol_kind_t yysymbol_kind_t;
      * ret
     */
 
-#line 234 "B.tab.c"
+#line 236 "B.tab.c"
 
 #ifdef short
 # undef short
@@ -617,15 +619,15 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   104,   104,   106,   115,   119,   125,   125,   135,   138,
-     145,   148,   154,   157,   163,   176,   187,   192,   199,   202,
-     208,   213,   218,   225,   230,   232,   237,   240,   247,   250,
-     256,   259,   265,   265,   271,   271,   276,   276,   280,   283,
-     286,   289,   292,   295,   298,   304,   307,   308,   309,   310,
-     311,   312,   313,   314,   318,   321,   327,   330,   336,   339,
-     341,   344,   347,   350,   353,   356,   359,   362,   365,   368,
-     371,   374,   377,   380,   386,   388,   389,   390,   391,   392,
-     393,   394,   395,   396,   397,   398,   399,   400,   401
+       0,   110,   110,   112,   121,   134,   154,   154,   182,   185,
+     193,   201,   209,   212,   219,   232,   243,   248,   255,   258,
+     265,   270,   276,   283,   298,   307,   319,   322,   330,   333,
+     340,   343,   352,   352,   358,   358,   364,   364,   369,   372,
+     375,   378,   381,   384,   387,   393,   396,   397,   398,   399,
+     400,   401,   402,   403,   407,   410,   417,   420,   426,   429,
+     431,   434,   437,   440,   443,   446,   449,   452,   455,   458,
+     461,   464,   467,   470,   476,   478,   479,   480,   481,   482,
+     483,   484,   485,   486,   487,   488,   489,   490,   491
 };
 #endif
 
@@ -1382,537 +1384,619 @@ yyreduce:
   switch (yyn)
     {
   case 3: /* program: program definition  */
-#line 106 "src/B.y"
+#line 112 "src/B.y"
                          {
         
     }
-#line 1390 "B.tab.c"
+#line 1392 "B.tab.c"
     break;
 
   case 4: /* definition: IDENTIFIER opt_ival_list SEMICOLON  */
-#line 115 "src/B.y"
+#line 121 "src/B.y"
                                        {
-        
+        symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+        if ((yyvsp[-1].opt).kind == OPT_NONE) {
+            add_symbol((yyvsp[-2].sval), symbol);
+        } else {
+            symbol->value.data = &((yyvsp[-1].opt).value.list);
+            symbol->size = (yyvsp[-1].opt).value.list.size;
+            // printf("size: %zu\n", symbol->size);
+            add_symbol((yyvsp[-2].sval), symbol);
+        }
+        free((yyvsp[-2].sval));
     }
-#line 1398 "B.tab.c"
+#line 1409 "B.tab.c"
     break;
 
   case 5: /* definition: IDENTIFIER LBRACKET opt_const RBRACKET opt_ival_list SEMICOLON  */
-#line 119 "src/B.y"
+#line 134 "src/B.y"
                                                                      {
-        /* identifier */
-        
+        symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+        if ((yyvsp[-3].opt).kind != OPT_NONE) {
+            const_t *constant = &((yyvsp[-3].opt).value.constant);
+            if (constant->type != CONST_INT) {
+                yyerror("Array size must be an integer");
+            }
+            symbol->size = constant->value;
+        }
 
+        if ((yyvsp[-1].opt).kind == OPT_NONE) {
+            symbol->value.data = NULL;
+            add_symbol((yyvsp[-5].sval), symbol);
+        } else {
+            symbol->value.data = &((yyvsp[-1].opt).value.list);
+            add_symbol((yyvsp[-5].sval), symbol);
+        }
+        free((yyvsp[-5].sval));
     }
-#line 1408 "B.tab.c"
+#line 1433 "B.tab.c"
     break;
 
   case 6: /* $@1: %empty  */
-#line 125 "src/B.y"
+#line 154 "src/B.y"
                                        {
+        symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+
+        if ((yyvsp[0].opt).kind == OPT_NONE) {
+            symbol->size = 0;
+        } else {
+            symbol->size = (yyvsp[0].opt).value.list.size;
+        }
+        add_symbol((yyvsp[-2].sval), symbol);
+        emit("%s:", (yyvsp[-2].sval));
+        emit("push ebp");
+        emit("mov ebp, esp\n");
+
         enter_scope(current_table);
         assert(current_table != global_table);
+        if ((yyvsp[0].opt).kind != OPT_NONE) {
+            add_argument_symb((yyvsp[-2].sval), &((yyvsp[0].opt).value.list));
+        }
+        print_symbol_table(current_table);
+        free((yyvsp[-2].sval));
     }
-#line 1417 "B.tab.c"
+#line 1459 "B.tab.c"
     break;
 
   case 7: /* definition: IDENTIFIER LPAREN opt_ident_list $@1 RPAREN statement  */
-#line 128 "src/B.y"
+#line 174 "src/B.y"
                        {
         exit_scope();
         assert(current_table == global_table);
-}
-#line 1426 "B.tab.c"
+        
+    }
+#line 1469 "B.tab.c"
     break;
 
   case 8: /* opt_ident_list: %empty  */
-#line 135 "src/B.y"
+#line 182 "src/B.y"
                 {
         (yyval.opt).kind = OPT_NONE;
     }
-#line 1434 "B.tab.c"
+#line 1477 "B.tab.c"
     break;
 
   case 9: /* opt_ident_list: ident_list  */
-#line 138 "src/B.y"
+#line 185 "src/B.y"
                  {
         (yyval.opt).value.list = (yyvsp[0].list);
+        (yyval.opt).kind = OPT_VALUE;
     }
-#line 1442 "B.tab.c"
+#line 1486 "B.tab.c"
     break;
 
   case 10: /* ident_list: IDENTIFIER  */
-#line 145 "src/B.y"
+#line 193 "src/B.y"
                {
-        
-    }
-#line 1450 "B.tab.c"
-    break;
+        node_t *node = create_node((yyvsp[0].sval));
 
-  case 11: /* ident_list: ident_list COMMA IDENTIFIER  */
-#line 148 "src/B.y"
-                                  {
-        
-    }
-#line 1458 "B.tab.c"
-    break;
-
-  case 12: /* opt_ival_list: %empty  */
-#line 154 "src/B.y"
-                {
-        (yyval.opt).kind = OPT_NONE;
-    }
-#line 1466 "B.tab.c"
-    break;
-
-  case 13: /* opt_ival_list: ival_list  */
-#line 157 "src/B.y"
-                {
-        (yyval.opt).value.list = (yyvsp[0].list);
-    }
-#line 1474 "B.tab.c"
-    break;
-
-  case 14: /* ival_list: ival  */
-#line 163 "src/B.y"
-         {
-        ival_t *ival = (ival_t *)xmalloc(sizeof(ival_t));
-        memcpy(ival, &(yyvsp[0].ival_s), sizeof(ival_t));
-        node_t *node = create_node(ival);
-
-        ival_t *test_val = node->data;
-        printf("%s\n", (char *)(test_val->value.constant.value));
-        printf("%p\n", &((yyval.list)));
         (yyval.list).size = 0;
         (yyval.list).head = NULL;
         (yyval.list).tail = NULL;
         add_node(&((yyval.list)), node);
     }
-#line 1492 "B.tab.c"
+#line 1499 "B.tab.c"
+    break;
+
+  case 11: /* ident_list: ident_list COMMA IDENTIFIER  */
+#line 201 "src/B.y"
+                                  {
+        node_t *node = create_node((yyvsp[0].sval));
+        add_node(&((yyvsp[-2].list)), node);
+        (yyval.list) = (yyvsp[-2].list);
+    }
+#line 1509 "B.tab.c"
+    break;
+
+  case 12: /* opt_ival_list: %empty  */
+#line 209 "src/B.y"
+                {
+        (yyval.opt).kind = OPT_NONE;
+    }
+#line 1517 "B.tab.c"
+    break;
+
+  case 13: /* opt_ival_list: ival_list  */
+#line 212 "src/B.y"
+                {
+        (yyval.opt).value.list = (yyvsp[0].list);
+        (yyval.opt).kind = OPT_VALUE;
+    }
+#line 1526 "B.tab.c"
+    break;
+
+  case 14: /* ival_list: ival  */
+#line 219 "src/B.y"
+         {
+        ival_t *ival = (ival_t *)xmalloc(sizeof(ival_t));
+        memcpy(ival, &(yyvsp[0].ival_s), sizeof(ival_t));
+        node_t *node = create_node(ival);
+
+        // ival_t *test_val = node->data;
+        // printf("%s\n", (char *)(test_val->value.constant.value));
+        // printf("%p\n", &($$));
+        (yyval.list).size = 0;
+        (yyval.list).head = NULL;
+        (yyval.list).tail = NULL;
+        add_node(&((yyval.list)), node);
+    }
+#line 1544 "B.tab.c"
     break;
 
   case 15: /* ival_list: ival_list COMMA ival  */
-#line 176 "src/B.y"
+#line 232 "src/B.y"
                            {
-        // ival_t *ival = (ival_t *)xmalloc(sizeof(ival_t));
-        // memcpy(ival, &$3, sizeof(ival_t));
-        // node_t *node = create_node(ival);
+        ival_t *ival = (ival_t *)xmalloc(sizeof(ival_t));
+        memcpy(ival, &(yyvsp[0].ival_s), sizeof(ival_t));
+        node_t *node = create_node(ival);
 
-        // add_node($1, node);
-        // $$ = $1;
+        add_node(&((yyvsp[-2].list)), node);
+        (yyval.list) = (yyvsp[-2].list);
     }
-#line 1505 "B.tab.c"
+#line 1557 "B.tab.c"
     break;
 
   case 16: /* ival: constant  */
-#line 187 "src/B.y"
+#line 243 "src/B.y"
              {
         (yyval.ival_s).type = IVAL_CONST;
         (yyval.ival_s).value.constant = (yyvsp[0].constant);
     }
-#line 1514 "B.tab.c"
+#line 1566 "B.tab.c"
     break;
 
   case 17: /* ival: IDENTIFIER  */
-#line 192 "src/B.y"
+#line 248 "src/B.y"
                  {
         (yyval.ival_s).type = IVAL_IDENTIFIER;
         (yyval.ival_s).value.identifier = (yyvsp[0].sval);
     }
-#line 1523 "B.tab.c"
+#line 1575 "B.tab.c"
     break;
 
   case 18: /* opt_const: %empty  */
-#line 199 "src/B.y"
+#line 255 "src/B.y"
                 {
         (yyval.opt).kind = OPT_NONE;
     }
-#line 1531 "B.tab.c"
+#line 1583 "B.tab.c"
     break;
 
   case 19: /* opt_const: constant  */
-#line 202 "src/B.y"
+#line 258 "src/B.y"
                { 
         (yyval.opt).value.constant = (yyvsp[0].constant);
+        (yyval.opt).kind = OPT_VALUE;;
     }
-#line 1539 "B.tab.c"
+#line 1592 "B.tab.c"
     break;
 
   case 20: /* constant: CHARCONST  */
-#line 208 "src/B.y"
+#line 265 "src/B.y"
               {
         (yyval.constant).type = CONST_CHAR;
         (yyval.constant).value = (yyvsp[0].ival);
 
     }
-#line 1549 "B.tab.c"
+#line 1602 "B.tab.c"
     break;
 
   case 21: /* constant: STRING  */
-#line 213 "src/B.y"
+#line 270 "src/B.y"
              {
         (yyval.constant).type = CONST_STRING;
         const char *label = st_get_label((yyvsp[0].sval));
         (yyval.constant).value = (size_t)label;
-    }
-#line 1559 "B.tab.c"
-    break;
-
-  case 22: /* constant: NUMBER  */
-#line 218 "src/B.y"
-             {
-        (yyval.constant).type = CONST_INT;
-        (yyval.constant).value = (yyvsp[0].ival);
-    }
-#line 1568 "B.tab.c"
-    break;
-
-  case 23: /* var_decl: IDENTIFIER opt_const  */
-#line 225 "src/B.y"
-                         {
-    }
-#line 1575 "B.tab.c"
-    break;
-
-  case 24: /* var_decl_list: var_decl  */
-#line 230 "src/B.y"
-             {
-    }
-#line 1582 "B.tab.c"
-    break;
-
-  case 25: /* var_decl_list: var_decl_list COMMA var_decl  */
-#line 232 "src/B.y"
-                                   {
-    }
-#line 1589 "B.tab.c"
-    break;
-
-  case 26: /* opt_statement: %empty  */
-#line 237 "src/B.y"
-                {
-        (yyval.opt).kind = OPT_NONE;
-    }
-#line 1597 "B.tab.c"
-    break;
-
-  case 27: /* opt_statement: opt_statement statement  */
-#line 240 "src/B.y"
-                              {
-        (yyval.opt).value.statement = (yyvsp[0].statement);
-    }
-#line 1605 "B.tab.c"
-    break;
-
-  case 28: /* opt_paren_expr: %empty  */
-#line 247 "src/B.y"
-                {
-        (yyval.opt).kind = OPT_NONE;
+        // free($1);
     }
 #line 1613 "B.tab.c"
     break;
 
-  case 29: /* opt_paren_expr: LPAREN expr RPAREN  */
-#line 250 "src/B.y"
+  case 22: /* constant: NUMBER  */
+#line 276 "src/B.y"
+             {
+        (yyval.constant).type = CONST_INT;
+        (yyval.constant).value = (yyvsp[0].ival);
+    }
+#line 1622 "B.tab.c"
+    break;
+
+  case 23: /* var_decl: IDENTIFIER opt_const  */
+#line 283 "src/B.y"
                          {
-        (yyval.opt).value.expr = (yyvsp[-1].expr);
+        if ((yyvsp[0].opt).kind != OPT_NONE) {
+            const_t *constant = (const_t *)xmalloc(sizeof(const_t));
+            memcpy(constant, &(yyvsp[0].opt).value.constant, sizeof(const_t));
+            
+            (yyval.var_decl).constant = constant;
+        } else {
+            (yyval.var_decl).constant = NULL;
+        }
+        (yyval.var_decl).name = (yyvsp[-1].sval);
+        // printf("name: %s\n", $1);
     }
-#line 1621 "B.tab.c"
+#line 1639 "B.tab.c"
     break;
 
-  case 30: /* opt_expr: %empty  */
-#line 256 "src/B.y"
-                {
-        (yyval.opt).kind = OPT_NONE;
-    }
-#line 1629 "B.tab.c"
-    break;
-
-  case 31: /* opt_expr: expr  */
-#line 259 "src/B.y"
-           {
-        (yyval.opt).value.expr = (yyvsp[0].expr);
-    }
-#line 1637 "B.tab.c"
-    break;
-
-  case 32: /* $@2: %empty  */
-#line 265 "src/B.y"
-                                 {
-
-    }
-#line 1645 "B.tab.c"
-    break;
-
-  case 33: /* statement: AUTO var_decl_list SEMICOLON $@2 statement  */
-#line 267 "src/B.y"
-                {
-
+  case 24: /* var_decl_list: var_decl  */
+#line 298 "src/B.y"
+             {
+        var_decl_t *var_decl = (var_decl_t *)xmalloc(sizeof(var_decl_t));
+        memcpy(var_decl, &(yyvsp[0].var_decl), sizeof(var_decl_t));
+        node_t *node = create_node(var_decl);
+        (yyval.list).size = 0;
+        (yyval.list).head = NULL;
+        (yyval.list).tail = NULL;
+        add_node(&((yyval.list)), node);
     }
 #line 1653 "B.tab.c"
     break;
 
-  case 34: /* $@3: %empty  */
-#line 271 "src/B.y"
-                                 {
+  case 25: /* var_decl_list: var_decl_list COMMA var_decl  */
+#line 307 "src/B.y"
+                                   {
+        var_decl_t *var_decl = (var_decl_t *)xmalloc(sizeof(var_decl_t));
+        memcpy(var_decl, &(yyvsp[0].var_decl), sizeof(var_decl_t));
+        node_t *node = create_node(var_decl);
+
+        add_node(&((yyvsp[-2].list)), node);
+        (yyval.list) = (yyvsp[-2].list);
+
     }
-#line 1660 "B.tab.c"
+#line 1667 "B.tab.c"
     break;
 
-  case 35: /* statement: EXTRN ident_list SEMICOLON $@3 statement  */
-#line 272 "src/B.y"
+  case 26: /* opt_statement: %empty  */
+#line 319 "src/B.y"
                 {
-
-    }
-#line 1668 "B.tab.c"
-    break;
-
-  case 36: /* $@4: %empty  */
-#line 276 "src/B.y"
-                 {
+        (yyval.opt).kind = OPT_NONE;
     }
 #line 1675 "B.tab.c"
     break;
 
-  case 37: /* statement: IDENTIFIER $@4 COLON statement  */
-#line 277 "src/B.y"
-                      {
-        
+  case 27: /* opt_statement: opt_statement statement  */
+#line 322 "src/B.y"
+                              {
+        (yyval.opt).value.statement = (yyvsp[0].statement);
+        (yyval.opt).kind = OPT_VALUE;
     }
-#line 1683 "B.tab.c"
+#line 1684 "B.tab.c"
     break;
 
-  case 38: /* statement: LBRACE opt_statement RBRACE  */
-#line 280 "src/B.y"
-                                  {
-        
-    }
-#line 1691 "B.tab.c"
-    break;
-
-  case 39: /* statement: IF LPAREN expr RPAREN statement  */
-#line 283 "src/B.y"
-                                                 {
-        /* Need something like if ($3) $5*/
-    }
-#line 1699 "B.tab.c"
-    break;
-
-  case 40: /* statement: IF LPAREN expr RPAREN statement ELSE statement  */
-#line 286 "src/B.y"
-                                                                {
-        /* Need something like if ($3) $5 else $7 */
-    }
-#line 1707 "B.tab.c"
-    break;
-
-  case 41: /* statement: WHILE LPAREN expr RPAREN statement  */
-#line 289 "src/B.y"
-                                         {
-        /* Need something like while ($3) $5 */
-    }
-#line 1715 "B.tab.c"
-    break;
-
-  case 42: /* statement: GOTO expr SEMICOLON  */
-#line 292 "src/B.y"
-                          {
-        /* Need something like goto $2 */
-    }
-#line 1723 "B.tab.c"
-    break;
-
-  case 43: /* statement: RETURN opt_paren_expr SEMICOLON  */
-#line 295 "src/B.y"
-                                      {
-        /* Need something like return $2 */
-    }
-#line 1731 "B.tab.c"
-    break;
-
-  case 44: /* statement: opt_expr SEMICOLON  */
-#line 298 "src/B.y"
-                         {
-        /* Need something like $1 */
-    }
-#line 1739 "B.tab.c"
-    break;
-
-  case 45: /* assign: expr ASSIGN expr  */
-#line 304 "src/B.y"
-                                  {
-        
-    }
-#line 1747 "B.tab.c"
-    break;
-
-  case 54: /* opt_expr_list: %empty  */
-#line 318 "src/B.y"
+  case 28: /* opt_paren_expr: %empty  */
+#line 330 "src/B.y"
                 {
         (yyval.opt).kind = OPT_NONE;
     }
-#line 1755 "B.tab.c"
+#line 1692 "B.tab.c"
+    break;
+
+  case 29: /* opt_paren_expr: LPAREN expr RPAREN  */
+#line 333 "src/B.y"
+                         {
+        (yyval.opt).value.expr = (yyvsp[-1].expr);
+        (yyval.opt).kind = OPT_VALUE;
+    }
+#line 1701 "B.tab.c"
+    break;
+
+  case 30: /* opt_expr: %empty  */
+#line 340 "src/B.y"
+                {
+        (yyval.opt).kind = OPT_NONE;
+    }
+#line 1709 "B.tab.c"
+    break;
+
+  case 31: /* opt_expr: expr  */
+#line 343 "src/B.y"
+           {
+        (yyval.opt).value.expr = (yyvsp[0].expr);
+        (yyval.opt).kind = OPT_VALUE;
+    }
+#line 1718 "B.tab.c"
+    break;
+
+  case 32: /* $@2: %empty  */
+#line 352 "src/B.y"
+                                 {
+        add_auto_symb(&((yyvsp[-1].list)));
+    }
+#line 1726 "B.tab.c"
+    break;
+
+  case 33: /* statement: AUTO var_decl_list SEMICOLON $@2 statement  */
+#line 354 "src/B.y"
+                {
+
+    }
+#line 1734 "B.tab.c"
+    break;
+
+  case 34: /* $@3: %empty  */
+#line 358 "src/B.y"
+                                 {
+        add_extrn_symbol(&((yyvsp[-1].list)));
+    }
+#line 1742 "B.tab.c"
+    break;
+
+  case 35: /* statement: EXTRN ident_list SEMICOLON $@3 statement  */
+#line 360 "src/B.y"
+                {
+
+    }
+#line 1750 "B.tab.c"
+    break;
+
+  case 36: /* $@4: %empty  */
+#line 364 "src/B.y"
+                 {
+        
+    }
+#line 1758 "B.tab.c"
+    break;
+
+  case 37: /* statement: IDENTIFIER $@4 COLON statement  */
+#line 366 "src/B.y"
+                      {
+        
+    }
+#line 1766 "B.tab.c"
+    break;
+
+  case 38: /* statement: LBRACE opt_statement RBRACE  */
+#line 369 "src/B.y"
+                                  {
+        
+    }
+#line 1774 "B.tab.c"
+    break;
+
+  case 39: /* statement: IF LPAREN expr RPAREN statement  */
+#line 372 "src/B.y"
+                                                 {
+        /* Need something like if ($3) $5*/
+    }
+#line 1782 "B.tab.c"
+    break;
+
+  case 40: /* statement: IF LPAREN expr RPAREN statement ELSE statement  */
+#line 375 "src/B.y"
+                                                                {
+        /* Need something like if ($3) $5 else $7 */
+    }
+#line 1790 "B.tab.c"
+    break;
+
+  case 41: /* statement: WHILE LPAREN expr RPAREN statement  */
+#line 378 "src/B.y"
+                                         {
+        /* Need something like while ($3) $5 */
+    }
+#line 1798 "B.tab.c"
+    break;
+
+  case 42: /* statement: GOTO expr SEMICOLON  */
+#line 381 "src/B.y"
+                          {
+        /* Need something like goto $2 */
+    }
+#line 1806 "B.tab.c"
+    break;
+
+  case 43: /* statement: RETURN opt_paren_expr SEMICOLON  */
+#line 384 "src/B.y"
+                                      {
+        /* Need something like return $2 */
+    }
+#line 1814 "B.tab.c"
+    break;
+
+  case 44: /* statement: opt_expr SEMICOLON  */
+#line 387 "src/B.y"
+                         {
+        /* Need something like $1 */
+    }
+#line 1822 "B.tab.c"
+    break;
+
+  case 45: /* assign: expr ASSIGN expr  */
+#line 393 "src/B.y"
+                                  {
+        
+    }
+#line 1830 "B.tab.c"
+    break;
+
+  case 54: /* opt_expr_list: %empty  */
+#line 407 "src/B.y"
+                {
+        (yyval.opt).kind = OPT_NONE;
+    }
+#line 1838 "B.tab.c"
     break;
 
   case 55: /* opt_expr_list: expr_list  */
-#line 321 "src/B.y"
+#line 410 "src/B.y"
                 {
         (yyval.opt).value.list = (yyvsp[0].list);
+        (yyval.opt).kind = OPT_VALUE;
     }
-#line 1763 "B.tab.c"
+#line 1847 "B.tab.c"
     break;
 
   case 56: /* expr_list: expr  */
-#line 327 "src/B.y"
+#line 417 "src/B.y"
          {
         
     }
-#line 1771 "B.tab.c"
+#line 1855 "B.tab.c"
     break;
 
   case 57: /* expr_list: expr_list COMMA expr  */
-#line 330 "src/B.y"
+#line 420 "src/B.y"
                            {
         
     }
-#line 1779 "B.tab.c"
+#line 1863 "B.tab.c"
     break;
 
   case 58: /* expr: constant  */
-#line 336 "src/B.y"
+#line 426 "src/B.y"
              {
 
     }
-#line 1787 "B.tab.c"
+#line 1871 "B.tab.c"
     break;
 
   case 59: /* expr: IDENTIFIER  */
-#line 339 "src/B.y"
+#line 429 "src/B.y"
                  {
     }
-#line 1794 "B.tab.c"
+#line 1878 "B.tab.c"
     break;
 
   case 60: /* expr: LPAREN expr RPAREN  */
-#line 341 "src/B.y"
+#line 431 "src/B.y"
                                       {
     }
-#line 1801 "B.tab.c"
+#line 1885 "B.tab.c"
     break;
 
   case 61: /* expr: expr LPAREN opt_expr_list RPAREN  */
-#line 344 "src/B.y"
+#line 434 "src/B.y"
                                        {
 
     }
-#line 1809 "B.tab.c"
+#line 1893 "B.tab.c"
     break;
 
   case 62: /* expr: assign  */
-#line 347 "src/B.y"
+#line 437 "src/B.y"
              {
 
     }
-#line 1817 "B.tab.c"
+#line 1901 "B.tab.c"
     break;
 
   case 63: /* expr: binary  */
-#line 350 "src/B.y"
+#line 440 "src/B.y"
              {
 
     }
-#line 1825 "B.tab.c"
+#line 1909 "B.tab.c"
     break;
 
   case 64: /* expr: INC expr  */
-#line 353 "src/B.y"
+#line 443 "src/B.y"
                          {
 
     }
-#line 1833 "B.tab.c"
+#line 1917 "B.tab.c"
     break;
 
   case 65: /* expr: DEC expr  */
-#line 356 "src/B.y"
+#line 446 "src/B.y"
                          {
 
     }
-#line 1841 "B.tab.c"
+#line 1925 "B.tab.c"
     break;
 
   case 66: /* expr: expr INC  */
-#line 359 "src/B.y"
+#line 449 "src/B.y"
                {
 
     }
-#line 1849 "B.tab.c"
+#line 1933 "B.tab.c"
     break;
 
   case 67: /* expr: expr DEC  */
-#line 362 "src/B.y"
+#line 452 "src/B.y"
                {
 
     }
-#line 1857 "B.tab.c"
+#line 1941 "B.tab.c"
     break;
 
   case 68: /* expr: MINUS expr  */
-#line 365 "src/B.y"
+#line 455 "src/B.y"
                              {
 
     }
-#line 1865 "B.tab.c"
+#line 1949 "B.tab.c"
     break;
 
   case 69: /* expr: NOT expr  */
-#line 368 "src/B.y"
+#line 458 "src/B.y"
                            {
 
     }
-#line 1873 "B.tab.c"
+#line 1957 "B.tab.c"
     break;
 
   case 70: /* expr: STAR expr  */
-#line 371 "src/B.y"
+#line 461 "src/B.y"
                             {
 
     }
-#line 1881 "B.tab.c"
+#line 1965 "B.tab.c"
     break;
 
   case 71: /* expr: AMPERSAND expr  */
-#line 374 "src/B.y"
+#line 464 "src/B.y"
                                    {
 
     }
-#line 1889 "B.tab.c"
+#line 1973 "B.tab.c"
     break;
 
   case 72: /* expr: expr LBRACKET expr RBRACKET  */
-#line 377 "src/B.y"
+#line 467 "src/B.y"
                                   {
 
     }
-#line 1897 "B.tab.c"
+#line 1981 "B.tab.c"
     break;
 
   case 73: /* expr: expr QUESTION expr COLON expr  */
-#line 380 "src/B.y"
+#line 470 "src/B.y"
                                                   {
 
     }
-#line 1905 "B.tab.c"
+#line 1989 "B.tab.c"
     break;
 
   case 74: /* binary: expr OR expr  */
-#line 386 "src/B.y"
+#line 476 "src/B.y"
                            {
      }
-#line 1912 "B.tab.c"
+#line 1996 "B.tab.c"
     break;
 
 
-#line 1916 "B.tab.c"
+#line 2000 "B.tab.c"
 
       default: break;
     }
@@ -2105,7 +2189,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 404 "src/B.y"
+#line 494 "src/B.y"
 
 // yyerror function
 void yyerror(const char *msg) {
@@ -2161,5 +2245,11 @@ int main(int argc, char **argv) {
     if (out && out != stdout) {
         fclose(out);
     }
+
+    /* print_table(string_table); */
+    // Clean up
+    free_symbol_table(global_table);
+    ht_destroy_table(string_table);
+
     return result;
 }

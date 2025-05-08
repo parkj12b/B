@@ -45,7 +45,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 35 "src/B.y"
+#line 37 "src/B.y"
 
     #include "compiler_struct.h"
 
@@ -124,7 +124,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 41 "src/B.y"
+#line 43 "src/B.y"
 
     /* primitive constants */
     size_t          ival;
@@ -133,11 +133,13 @@ union YYSTYPE
     opt_t           opt;    // for optional values
     list_t          list;   // for list values
     const_t         constant; // for constant types
-    statement_t    statement; // for statement types
-    expr_t         expr;   // for expression types
-    ival_t         ival_s;   // for ival types
+    statement_t     statement; // for statement types
+    expr_t          expr;   // for expression types
+    ival_t          ival_s;   // for ival types
+    definition_t    definition; // for definition types
+    var_decl_t      var_decl; // for variable declaration types
 
-#line 141 "B.tab.h"
+#line 143 "B.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

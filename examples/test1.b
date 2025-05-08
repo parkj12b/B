@@ -1,2 +1,6 @@
-a "hello world", "bye world" ;
-b "hello world";
+main(argc, argv, envp) {
+	auto label 10, a, b;
+
+	printf("hello i am label*n");
+
+}

@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/04 23:26:15 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/06 01:32:21 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/08 21:16:29 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,7 @@ typedef struct expr_s
 typedef enum
 {
 	OPT_NONE,
+	OPT_VALUE,
 } opt_kind_t;
 
 typedef struct opt_s
@@ -104,9 +105,21 @@ typedef struct ival_s
 	} value;
 } ival_t;
 
+typedef struct definition_s
+{
+	int type;
+} definition_t;
+
+typedef struct var_decl_s
+{
+	char *name;
+	const_t *constant;
+} var_decl_t;
+
 /* compiler_struct.c */
 void add_node(list_t *list, node_t *node);
 node_t *create_node(void *data);
 list_t *create_list(void);
+void print_constant(const_t *constant);
 
 #endif
