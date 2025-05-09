@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/07 22:45:35 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/09 23:33:42 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,7 @@ void exit_scope(void);
  * @details if the symbol is not found, it returns NULL.
  * 			Returns scope of where it found the symbol.
  */
-void *get_symbol(char *name, int *scope);
+void *get_symbol(char *name);
 void print_symbol_table(symbol_table_t *s_table);
 void free_symbol_table(symbol_table_t *s_table);
 

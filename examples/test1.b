@@ -1,6 +1,12 @@
-main(argc, argv, envp) {
-	auto label 10, a, b;
+main() {
+	auto a;
+	a = 10;
+	foo(a);
 
-	printf("hello i am label*n");
+}
 
+foo(a) {
+	printf("%d", a);
+
+	return (0);
 }

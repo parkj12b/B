@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/04 23:26:15 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/08 21:16:29 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/09 22:15:02 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 typedef struct node_s
 {
 	struct node_s *next;
+	struct node_s *prev;
 	void *data;
 } node_t;
 
@@ -51,13 +52,25 @@ typedef struct statement_s
 {
 	int type;
 	void *data;
+	size_t label_num;
 } statement_t;
+
+typedef enum
+{
+	LVALUE,
+	RVALUE,
+	CONSTANT,
+} expr_type_t;
 
 /* expr */
 typedef struct expr_s
 {
-	int type;
-	void *data;
+	expr_type_t type;
+	union {
+		const_t constant;
+		size_t 	value;
+		char 	*identifier;
+	};
 } expr_t;
 
 typedef enum

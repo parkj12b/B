@@ -23,9 +23,11 @@ void yyerror(const char *msg);
  * Since all table data is needed till the end of the program,
  * there is no need to free the symbol table.
 */
-symbol_table_t *global_table = NULL;
-symbol_table_t *current_table = NULL;
-htable_t       *string_table;
+symbol_table_t  *global_table = NULL;
+symbol_table_t  *current_table = NULL;
+htable_t        *string_table;
+char            *current_function = NULL;
+size_t          label_counter = 1;
 
 char *buffer[512];
 
@@ -75,7 +77,7 @@ int current_depth = 0;
 %type <opt> opt_paren_expr opt_expr opt_const opt_statement 
 %type <list> ident_list ival_list var_decl_list expr_list
 %type <constant> constant
-%type <statement> statement
+%type <statement> statement open_statement closed_statement
 %type <expr> expr
 %type <ival_s> ival
 %type <definition> definition
@@ -172,6 +174,7 @@ definition:
         print_symbol_table(current_table);
         free($1);
     } RPAREN statement {
+        emit("jmp .exit\n");
         exit_scope();
         assert(current_table == global_table);
         
@@ -295,7 +298,6 @@ var_decl:
             $$.constant = NULL;
         }
         $$.name = $1;
-        // printf("name: %s\n", $1);
     }
     ;
 
@@ -352,64 +354,102 @@ opt_expr:
     }
     ;
 
-/* 5.0 statement */
 statement:
-    /* 6.2 automatic declaration */
-    AUTO var_decl_list SEMICOLON {
-        add_auto_symb(&($2));
-    } statement {
-
-    }
-    /* 6.1 external declaration */
-    /* 
-        external declaration sepcifies that each of the named
-        variable is of the external storage class. Declaration must
-        occur before the first use of the variable.
-    */
-    | EXTRN ident_list SEMICOLON {
-        add_extrn_symbol(&($2));
-    } statement {
-
-    }
-    /* 6.3 Internal Declaration (labels) */
-    /*
-        Deciding if label should collid with symbol definition is
-        implementation defined.
-        I am choosing to avoid collision.
-    */
-    | IDENTIFIER {
-        
-    } COLON statement {
-        
-    }
+    open_statement
+    | closed_statement
     | LBRACE opt_statement RBRACE {
         
     }
-    | IF LPAREN expr RPAREN statement %prec THEN {
-        /* Need something like if ($3) $5*/
-    }
-    | IF LPAREN expr RPAREN statement ELSE statement %prec ELSE {
-        /* Need something like if ($3) $5 else $7 */
-    }
-    | WHILE LPAREN expr RPAREN statement {
-        /* Need something like while ($3) $5 */
-    }
-    | GOTO expr SEMICOLON {
+    ;
+
+simple_statement:
+    GOTO expr SEMICOLON { //TODO: check if expr is a label and local
         /* Need something like goto $2 */
+        emit("jmp %s", $2.identifier);
     }
     | RETURN opt_paren_expr SEMICOLON {
         /* Need something like return $2 */
+        if ($2.kind != OPT_NONE) {
+            load_value_into_eax($2.value.expr);
+        }
     }
     | opt_expr SEMICOLON {
         /* Need something like $1 */
     }
     ;
 
+auto:
+    AUTO var_decl_list SEMICOLON {
+        add_auto_symb(&($2));
+    }
+    ;
+
+extrn:
+    EXTRN ident_list SEMICOLON {
+        add_extrn_symbol(&($2));
+    }
+    ;
+
+colon:
+    IDENTIFIER COLON {
+        emit("%s:", $1);
+    }
+    ;
+
+statement_prefix:
+    auto
+    | extrn
+    | colon
+    ;
+
+if_expr:
+    IF LPAREN expr RPAREN {
+        /* Need something like if ($3) */
+        if ($3.type == LVALUE) {
+            emit("mov eax, %s", $3.identifier);
+        } else {
+            emit("mov eax, %zu", $3.value);
+        }
+    }
+    ;
+
+open_statement:
+    if_expr statement {
+        /* Need something like if ($3) $5 */
+    }
+    | if_expr closed_statement ELSE open_statement {
+        /* Need something like if ($3) $5 else $7 */
+    }
+    | WHILE LPAREN expr RPAREN open_statement {
+        /* Need something like while ($3) $5 */
+    }
+    | statement_prefix open_statement {
+
+    }
+    ;
+
+closed_statement:
+    simple_statement {
+
+    }
+    | if_expr closed_statement ELSE closed_statement {
+        /* Need something like if ($3) $5 */
+    }
+    | WHILE LPAREN expr RPAREN closed_statement {
+        /* Need something like while ($3) $5 */
+    }
+    | statement_prefix closed_statement {
+
+    }
+    ;
+
 assign:
     expr ASSIGN expr %prec ASSIGN {
+        perform_assign($1, $3);
+    }
+    | expr ASSIGN_OR expr %prec ASSIGN_OR {
         
     }
-    | expr ASSIGN_OR expr %prec ASSIGN_OR
     | expr ASSIGN_LSHIFT expr %prec ASSIGN_LSHIFT
     | expr ASSIGN_RSHIFT expr %prec ASSIGN_RSHIFT
     | expr ASSIGN_MINUS expr %prec ASSIGN_MINUS
@@ -431,24 +471,52 @@ opt_expr_list:
 
 expr_list:
     expr {
-        
+        expr_t *expr = (expr_t *)xmalloc(sizeof(expr_t));
+        memcpy(expr, &$1, sizeof(expr_t));
+        node_t *node = create_node(expr);
+
+        $$.size = 0;
+        $$.head = NULL;
+        $$.tail = NULL;
+        add_node(&($$), node);
     }
     | expr_list COMMA expr {
-        
+        expr_t *expr = (expr_t *)xmalloc(sizeof(expr_t));
+        memcpy(expr, &$3, sizeof(expr_t));
+        node_t *node = create_node(expr);
+
+        add_node(&($1), node);
+        $$ = $1;
     }
     ;
 
 expr:
     constant {
-
+        $$.type = CONSTANT;
+        $$.constant = $1;
     }
     | IDENTIFIER {
+        $$.type = LVALUE;
+        $$.identifier = $1;
     }
     | LPAREN expr RPAREN %prec LPAREN {
+        $$ = $2;
     }
     /* function call */
     | expr LPAREN opt_expr_list RPAREN {
-
+        if ($1.type != LVALUE) {
+            yyerror("LHS of function call must be a Lvalue");
+        }
+        if ($3.kind != OPT_NONE) {
+            function_call(&($3.value.list));
+        }
+        if ($1.type == LVALUE) {
+            emit("call %s\n", $1.identifier);
+        } else {
+            emit("call %zu\n", $1.value);
+        }
+        $$.type = RVALUE;
+        $$.identifier = strdup("eax");
     }
     | assign {
 
@@ -511,6 +579,7 @@ binary:
 // yyerror function
 void yyerror(const char *msg) {
     fprintf(stderr, "Error at line %d: %s\n", yylineno, msg);
+    exit(1);
 }
 
 int main(int argc, char **argv) {
@@ -563,6 +632,7 @@ int main(int argc, char **argv) {
         fclose(out);
     }
 
+    exit_label();
     /* print_table(string_table); */
     // Clean up
     free_symbol_table(global_table);

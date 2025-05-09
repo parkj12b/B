@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/08 22:11:08 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/09 23:33:51 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,14 +66,13 @@ void add_symbol(char *name, void *value)
 	ht_insert(current_table->table, name, value);
 }
 
-void *get_symbol(char *name, int *scope)
+
+void *get_symbol(char *name)
 {
 	void *data = ht_search(current_table->table, name);
 
 	if (data != NULL)
 	{
-		if (scope)
-			*scope = LOCAL;
 		return data;
 	}
 
@@ -81,8 +80,6 @@ void *get_symbol(char *name, int *scope)
 		data = ht_search(global_table->table, name);
 	if (data != NULL)
 	{
-		if (scope)
-			*scope = GLOBAL;
 		return data;
 	}
 	return NULL;

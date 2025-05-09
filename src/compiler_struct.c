@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/06 01:12:29 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/08 22:04:14 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/09 23:40:49 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ void add_node(list_t *list, node_t *node)
 	else
 	{
 		list->tail->next = node;
+		node->prev = list->tail;
 		list->tail = node;
 	}
 	list->size++;
@@ -40,6 +41,7 @@ node_t *create_node(void *data)
 	}
 	node->data = data;
 	node->next = NULL;
+	node->prev = NULL;
 	return node;
 }
 
@@ -67,12 +69,10 @@ void	print_constant(const_t *constant)
 	switch (constant->type)
 	{
 	case CONST_INT:
-		printf("%zu\n", constant->value);
-		break;
+	case CONST_CHAR:
 	// case CONST_FLOAT:
 	// 	printf("FLOAT: %zu\n", constant->value);
 	// 	break;
-	case CONST_CHAR:
 		printf("%zu\n", constant->value);
 		break;
 	case CONST_STRING:
