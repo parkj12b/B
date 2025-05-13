@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/10 00:02:31 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/10 15:47:52 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,13 +16,14 @@
 
 void init_assembly(void)
 {
-	emit(".intel_syntax noprefix");
 	emit("section .text");
+	emit("extern printf"); // TODO: only for debug, delete later
+	emit("global main");
 }
 
 void exit_label(void)
 {
-	emit(".exit:");
+	emit("exit:");
 	emit("leave");
 	emit("ret");
 }

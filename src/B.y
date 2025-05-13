@@ -77,7 +77,7 @@ int current_depth = 0;
 %type <opt> opt_paren_expr opt_expr opt_const opt_statement 
 %type <list> ident_list ival_list var_decl_list expr_list
 %type <constant> constant
-%type <statement> statement open_statement closed_statement
+%type <statement> statement open_statement closed_statement simple_statement
 %type <expr> expr
 %type <ival_s> ival
 %type <definition> definition
@@ -174,7 +174,7 @@ definition:
         print_symbol_table(current_table);
         free($1);
     } RPAREN statement {
-        emit("jmp .exit\n");
+        emit("jmp exit\n");
         exit_scope();
         assert(current_table == global_table);
         
@@ -365,16 +365,21 @@ statement:
 simple_statement:
     GOTO expr SEMICOLON { //TODO: check if expr is a label and local
         /* Need something like goto $2 */
-        emit("jmp %s", $2.identifier);
+        emit("jmp .%s", $2.identifier);
     }
     | RETURN opt_paren_expr SEMICOLON {
         /* Need something like return $2 */
         if ($2.kind != OPT_NONE) {
-            load_value_into_eax($2.value.expr);
+            load_value_into_eax(&($2.value.expr));
         }
     }
     | opt_expr SEMICOLON {
         /* Need something like $1 */
+        // if ($1.kind != OPT_NONE) {
+        //     $$ = $1.value.expr;
+        // } else {
+        //     $$ = NULL;
+        // }
     }
     ;
 
@@ -392,7 +397,8 @@ extrn:
 
 colon:
     IDENTIFIER COLON {
-        emit("%s:", $1);
+        /* labels are local */
+        emit(".%s:", $1);
     }
     ;
 
@@ -445,18 +451,32 @@ closed_statement:
 
 assign:
     expr ASSIGN expr %prec ASSIGN {
-        perform_assign($1, $3);
+        perform_assign(&$1, ASSIGN, &$3);
     }
     | expr ASSIGN_OR expr %prec ASSIGN_OR {
-        
+        perform_assign(&$1, ASSIGN_OR, &$3);
     }
-    | expr ASSIGN_LSHIFT expr %prec ASSIGN_LSHIFT
-    | expr ASSIGN_RSHIFT expr %prec ASSIGN_RSHIFT
-    | expr ASSIGN_MINUS expr %prec ASSIGN_MINUS
-    | expr ASSIGN_PLUS expr %prec ASSIGN_PLUS
-    | expr ASSIGN_MOD expr %prec ASSIGN_MOD
-    | expr ASSIGN_MUL expr %prec ASSIGN_MUL 
-    | expr ASSIGN_DIVIDE expr %prec ASSIGN_DIVIDE  
+    | expr ASSIGN_LSHIFT expr %prec ASSIGN_LSHIFT {
+        perform_assign(&$1, ASSIGN_LSHIFT, &$3);
+    }
+    | expr ASSIGN_RSHIFT expr %prec ASSIGN_RSHIFT {
+        perform_assign(&$1, ASSIGN_RSHIFT, &$3);
+    }
+    | expr ASSIGN_MINUS expr %prec ASSIGN_MINUS {
+        perform_assign(&$1, ASSIGN_MINUS, &$3);
+    }
+    | expr ASSIGN_PLUS expr %prec ASSIGN_PLUS {
+        perform_assign(&$1, ASSIGN_PLUS, &$3);
+    }
+    | expr ASSIGN_MOD expr %prec ASSIGN_MOD {
+        perform_assign(&$1, ASSIGN_MOD, &$3);
+    }
+    | expr ASSIGN_MUL expr %prec ASSIGN_MUL {
+        perform_assign(&$1, ASSIGN_MUL, &$3);
+    }
+    | expr ASSIGN_DIVIDE expr %prec ASSIGN_DIVIDE {
+        perform_assign(&$1, ASSIGN_DIVIDE, &$3);
+    }  
     ;
 
 opt_expr_list:
@@ -515,6 +535,11 @@ expr:
         } else {
             emit("call %zu\n", $1.value);
         }
+        /* clean up passed arguments */
+        size_t arg_resb = $3.value.list.size * 4;
+        if (arg_resb > 0) {
+            emit("add esp, %zu\n", arg_resb);
+        }
         $$.type = RVALUE;
         $$.identifier = strdup("eax");
     }
@@ -525,25 +550,64 @@ expr:
 
     }
     | INC expr %prec INC {
-
+        if ($2.type != LVALUE) {
+            yyerror("LHS of increment must be a Lvalue");
+        }
+        unary(&$2, "inc");
+        $$ = $2;
     }
     | DEC expr %prec DEC {
-
+        if ($2.type != LVALUE) {
+            yyerror("LHS of decrement must be a Lvalue");
+        }
+        unary(&$2, "dec");
+        $$ = $2;
     }
     | expr INC {
+        if ($1.type != LVALUE) {
+            yyerror("LHS of increment must be a Lvalue");
+        }
 
+        char *name = add_temp_symbol();
+        $$.type = TEMP;
+        $$.identifier = name;
+        
+        load_value_into_eax(&$1);
+        register_to_lvalue(&$$, "eax");
+        unary(&$1, "inc");
     }
     | expr DEC {
-
+        if ($1.type != LVALUE) {
+            yyerror("LHS of decrement must be a Lvalue");
+        }
+        $$ = $1;
+        char *name = add_temp_symbol();
+        $$.type = TEMP;
+        $$.identifier = name;
+        
+        load_value_into_eax(&$1);
+        register_to_lvalue(&$$, "eax");
+        unary(&$1, "dec");
     }
     | MINUS expr %prec UNARY {
-
+        negate_unary(&$2);
+        $$ = $2;
     }
     | NOT expr %prec UNARY {
-
+        $$ = $2;
+        char *name = add_temp_symbol();
+        $$.type = RVALUE;
+        $$.identifier = name;
+        
+        load_value_into_eax(&$2);
+        emit("test eax, eax");
+        emit("setz al");
+        emit("movzx eax, al");
+        register_to_lvalue(&$$, "eax");
     }
     | STAR expr %prec DEREF {
-
+        $$ = $2;
+        $$.type = LVALUE;
     }
     | AMPERSAND expr %prec ADDR_OF {
 
@@ -634,6 +698,7 @@ int main(int argc, char **argv) {
 
     exit_label();
     /* print_table(string_table); */
+    st_print_table();
     // Clean up
     free_symbol_table(global_table);
     ht_destroy_table(string_table);

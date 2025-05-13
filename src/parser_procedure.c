@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/10 00:13:09 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/13 23:11:10 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,9 +22,8 @@ extern void yyerror(const char *s);
 
 void add_argument_symb(char *name, list_t *list)
 {
-	offset_stack[current_depth] += list->size * 4; // TODO: define word size for x86
 	node_t *cur = list->head;
-	size_t arg_num = list->size - 1;
+	size_t arg_num = 0;
 
 	while (cur)
 	{
@@ -33,7 +32,7 @@ void add_argument_symb(char *name, list_t *list)
 		symb->size = 0;
 		symb->location.offset = 8 + arg_num * 4; // TODO: define word size for x86
 		add_symbol((char *)cur->data, symb);
-		arg_num--;
+		arg_num++;
 		cur = cur->next;
 	}
 }
@@ -53,18 +52,19 @@ void add_auto_symb(list_t *var_decl_list)
 		if (var_decl->constant != NULL)
 		{
 			symb->size = var_decl->constant->value;
-			emit("sub esp %zu", symb->size * 4);
+			printf("here\n");
+			emit("sub esp %zd", symb->size * 4); // TODO: define word size for x86
 		}
 		else
 		{
 			symb->size = 1;
 			emit("push 0");
 		}
+
+		offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
 		symb->location.offset = offset_stack[current_depth];
 
 		/* emit code */
-
-		offset_stack[current_depth] += symb->size * 4; // TODO: define word size for x86
 		add_symbol(var_decl->name, symb);
 		free(var_decl->name);
 		free(var_decl);
@@ -94,6 +94,19 @@ void add_extrn_symbol(list_t *ident_list)
 	}
 }
 
+void print_lvalue(expr_t *expr)
+{
+	symbol_t *symbol = get_symbol(expr->identifier);
+	if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP)
+	{
+		printf("dword [ebp %+zd]", symbol->location.offset);
+	}
+	else
+	{
+		printf("%s", expr->identifier);
+	}
+}
+
 void function_call(list_t *expr_list)
 {
 	node_t *cur = expr_list->tail;
@@ -101,104 +114,193 @@ void function_call(list_t *expr_list)
 	while (cur)
 	{
 		expr_t *expr = (expr_t *)cur->data;
-		if (expr->type == LVALUE)
+		if (expr->type == LVALUE || expr->type == TEMP || expr->type == RVALUE)
 		{
-			emit("push %s", expr->identifier);
+			printf("push ");
+			print_lvalue(expr);
+			printf("\n");
 		}
 		else if (expr->type == CONSTANT)
 		{
+			const_t *constant = &expr->constant;
 			printf("push ");
+			if (constant->type != CONST_STRING)
+				printf("dword ");
 			print_constant(&expr->constant);
-		}
-		else
-		{
-			emit("push %zu", expr->value);
 		}
 		cur = cur->prev;
 	}
 }
 
-void load_value_into_eax(expr_t expr)
+void load_value_into_eax(expr_t *expr)
 {
-	if (expr.type == LVALUE)
+	if (expr->type == LVALUE)
 	{
-		symbol_t *symbol = get_symbol(expr.identifier);
-		if (symbol->type == LOCAL)
+		symbol_t *symbol = get_symbol(expr->identifier);
+		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP)
 		{
-			emit("mov eax, [ebp - %d]", symbol->location.offset);
+			emit("mov eax, [ebp %+zd]", symbol->location.offset);
 		}
 		else
 		{
-			emit("mov eax, %s", expr.identifier);
+			emit("mov eax, %s", expr->identifier);
 		}
 	}
-	else if (expr.type == CONSTANT)
+	else if (expr->type == CONSTANT)
 	{
 		printf("mov eax, ");
-		print_constant(&expr.constant);
+		print_constant(&(expr->constant));
 	}
-	else if (expr.type == IVAL_IDENTIFIER)
+	else if (expr->type == IVAL_IDENTIFIER)
 	{
-		symbol_t *symbol = get_symbol(expr.identifier);
+		symbol_t *symbol = get_symbol(expr->identifier);
 		if (symbol->type == LOCAL)
 		{
 			emit("mov eax, [ebp - %d]", symbol->location.offset);
 		}
 		else
 		{
-			emit("mov eax, %s", expr.identifier);
+			emit("mov eax, %s", expr->identifier);
 		}
 	}
 	else
 	{
-		emit("mov eax, %zu", expr.value);
+		emit("mov eax, %zu", expr->value);
 	}
 }
 
-void register_to_rvalue(char *reg, expr_t expr)
+void register_to_lvalue(expr_t *expr, char *reg)
 {
-	symbol_t *symbol_l = get_symbol(expr.identifier);
+	symbol_t *symbol_l = get_symbol(expr->identifier);
 
-	if (symbol_l->type == LOCAL)
+	if (symbol_l->type == LOCAL || symbol_l->type == AUTO 
+		|| symbol_l->type == TEMP)
 	{
-		emit("mov [ebp - %d], eax", symbol_l->location.offset);
+		emit("mov [ebp %+d], %s", symbol_l->location.offset, reg);
 	}
 	else
 	{
-		emit("mov %s, eax", expr.identifier);
+		emit("mov %s, %s", expr->identifier, reg);
 	}
 }
 
-void perform_assign(expr_t lhs, expr_t rhs, int op)
+void perform_assign_op(expr_t *rhs, char *op_command)
 {
-	if (lhs.type != LVALUE)
+	if (rhs->type == LVALUE)
+	{
+		printf("mov ebx, ");
+		print_lvalue(rhs);
+		printf("\n");
+		emit("%s eax, ebx", op_command);
+	}
+	else if (rhs->type == CONSTANT)
+	{
+		printf("%s eax, ", op_command);
+		print_constant(&rhs->constant);
+	}
+	else
+	{
+		emit("%s eax, %zd", rhs->value, op_command);
+	}
+}
+
+void perform_assign_div(expr_t *rhs)
+{
+	emit("xor edx, edx");
+	if (rhs->type == LVALUE)
+	{
+		printf("mov ebx, ");
+		print_lvalue(rhs);
+		printf("\n");
+	}
+	else if (rhs->type == CONSTANT)
+	{
+		printf("mov ebx, ");
+		print_constant(&rhs->constant);
+		printf("\n");
+	}
+	printf("idiv ebx\n");
+}
+
+void perform_assign(expr_t *lhs, int op, expr_t *rhs)
+{
+	if (lhs->type != LVALUE)
 	{
 		yyerror("LHS of assignment must be a Lvalue");
 		return;
 	}
 
 	// Load the RHS value into EAX
+	if (op == ASSIGN)
+		load_value_into_eax(rhs);
+	else
+		load_value_into_eax(lhs);
+
 	switch (op)
 	{
 	case ASSIGN:
-		load_value_into_eax(rhs);
-		register_to_rvalue("eax", lhs);
+		break;
+	case ASSIGN_OR:
+		perform_assign_op(rhs, "or");
+		break;
+	case ASSIGN_LSHIFT:
+		perform_assign_op(rhs, "shl");
+		break;
+	case ASSIGN_RSHIFT:
+		perform_assign_op(rhs, "shr");
 		break;
 	case ASSIGN_PLUS:
-		emit("add eax, %zu", rhs.value);
+		perform_assign_op(rhs, "add");
 		break;
 	case ASSIGN_MINUS:
-		emit("sub eax, %zu", rhs.value);
+		perform_assign_op(rhs, "sub");
 		break;
 	case ASSIGN_MUL:
-		emit("imul eax, %zu", rhs.value);
+		perform_assign_op(rhs, "imul");
 		break;
 	case ASSIGN_DIVIDE:
-		emit("xor edx, edx");
-		emit("idiv eax, %zu", rhs.value);
+		perform_assign_div(rhs);
 		break;
 	default:
 		yyerror("Invalid assignment operator");
 		return;
+	}
+	register_to_lvalue(lhs, "eax");
+	printf("\n");
+}
+
+void negate_unary(expr_t *expr)
+{
+	if (expr->type == LVALUE)
+	{
+		load_value_into_eax(expr);
+		emit("neg eax");
+		register_to_lvalue(expr, "eax");
+	}
+	else if (expr->type == CONSTANT)
+	{
+		expr->constant.value = -expr->constant.value;
+	}
+	else
+	{
+		expr->value = -expr->value;
+	}
+}
+
+void unary(expr_t *expr, char *op)
+{
+	if (expr->type == LVALUE)
+	{
+		load_value_into_eax(expr);
+		emit("%s eax", op);
+		register_to_lvalue(expr, "eax");
+	}
+	else if (expr->type == CONSTANT)
+	{
+		expr->constant.value++;
+	}
+	else
+	{
+		expr->value++;
 	}
 }

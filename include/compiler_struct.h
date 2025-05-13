@@ -6,13 +6,14 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/04 23:26:15 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/09 22:15:02 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/13 21:39:29 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef COMPILER_STRUCT_H
 #define COMPILER_STRUCT_H
 
+#include <sys/types.h>
 /* list_t */
 
 typedef struct node_s
@@ -43,7 +44,7 @@ typedef enum
 typedef struct const_s
 {
 	const_type_t type;
-	size_t value;
+	ssize_t value;
 } const_t;
 
 /* statement */
@@ -60,6 +61,7 @@ typedef enum
 	LVALUE,
 	RVALUE,
 	CONSTANT,
+	TEMP,
 } expr_type_t;
 
 /* expr */
@@ -68,7 +70,7 @@ typedef struct expr_s
 	expr_type_t type;
 	union {
 		const_t constant;
-		size_t 	value;
+		ssize_t 	value;
 		char 	*identifier;
 	};
 } expr_t;

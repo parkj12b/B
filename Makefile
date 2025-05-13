@@ -31,10 +31,13 @@ INCLUDES = -Iinclude -Ilibft/include
 
 all: $(NAME)
 
-$(NAME): $(FLEX_SRCS) $(BISON_SRCS)
+$(NAME): $(FLEX_SRCS) $(BISON_SRCS) $(LIBFT)
 	bison $(BISON_FLAG) $(BISON_SRCS)
 	flex $(FLEX_SRCS)
 	$(CC) $(CFLAGS) $(INCLUDES) lex.yy.c B.tab.c $(SRCS) $(LIBFT) -o $(NAME)
+
+$(LIBFT):
+	$(MAKE) -C libft
 
 nocounter: $(FLEX_SRCS) $(BISON_SRCS)
 	bison -d $(BISON_SRCS)
@@ -48,6 +51,7 @@ clean:
 fclean:
 	$(MAKE) clean
 	rm -rf $(NAME)
+	$(MAKE) -C libft fclean
 
 re:
 	$(MAKE) fclean
@@ -55,5 +59,11 @@ re:
 
 test: 
 	$(CC) -g -Iinclude -Ilibft/include $(TEST_SRCS) libft/libft.a -o a.out
+
+asm:
+	$(NAME) exmaples/test1.b 2> /dev/null > test.asm
+	nasm -f elf32 test.asm
+	gcc -mtune=i386 -m32 -pie test.o -o test
+	./test
 
 .PHONY: all clean fclean no_counter

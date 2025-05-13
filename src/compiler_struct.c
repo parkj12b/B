@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/06 01:12:29 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/09 23:40:49 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/13 20:05:02 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ void	print_constant(const_t *constant)
 	// case CONST_FLOAT:
 	// 	printf("FLOAT: %zu\n", constant->value);
 	// 	break;
-		printf("%zu\n", constant->value);
+		printf("%zd\n", constant->value);
 		break;
 	case CONST_STRING:
 		printf("%s\n", (char *)constant->value);
@@ -84,5 +84,21 @@ void	print_constant(const_t *constant)
 	default:
 		printf("UNKNOWN TYPE\n");
 		break;
+	}
+}
+
+void temp_expr(expr_t *expr)
+{
+	if (expr->type == LVALUE)
+	{
+		printf("dword [ebp %+zd]", expr->value);
+	}
+	else if (expr->type == CONSTANT)
+	{
+		print_constant(&expr->constant);
+	}
+	else
+	{
+		printf("%zu\n", expr->value);
 	}
 }

@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:26:22 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/08 17:08:15 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/13 15:29:54 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,5 +89,6 @@ void ht_shrink_table(htable_t *table);
 /* string_table.c */
 const char *st_get_label(const char *str);
 void print_table(htable_t *table);
+void st_print_table(void);
 
 #endif

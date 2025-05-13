@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/09 23:33:42 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/13 21:48:03 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,12 +14,15 @@
 #define SYMBOL_TABLE_H
 
 #include <stdlib.h>
+#include <stddef.h>
 #include "hash_table.h"
 
 typedef enum
 {
 	LOCAL,
 	GLOBAL,
+	// AUTO,
+	// EXTRN,
 } scope_t;
 
 typedef enum
@@ -46,7 +49,7 @@ typedef struct symbol_s
 	union
 	{
 		const char *label;
-		size_t offset;
+		ssize_t offset;
 	} location;
 } symbol_t;
 
@@ -75,5 +78,6 @@ void exit_scope(void);
 void *get_symbol(char *name);
 void print_symbol_table(symbol_table_t *s_table);
 void free_symbol_table(symbol_table_t *s_table);
+char *add_temp_symbol();
 
 #endif

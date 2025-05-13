@@ -550,16 +550,19 @@ char *yytext;
 #include <stdlib.h>
 #include <string.h>
 #include "B.tab.h"   // Bison token definitions
+#include "vector.h"
+#include "parser.h"
 
 extern int yylex(void);
 extern char *yytext;  // Flex
 extern YYSTYPE yylval; // yylval은 토큰의 값 (숫자라면 정수값, 문자열이라면 포인터)
+void yyerror(const char *s);
 
 int process_charconst(const char* text);
+char *str_to_assembly_str(const char *str);
+#line 564 "lex.yy.c"
 
-#line 561 "lex.yy.c"
-
-#line 563 "lex.yy.c"
+#line 566 "lex.yy.c"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -777,9 +780,9 @@ YY_DECL
 		}
 
 	{
-#line 19 "src/B.l"
+#line 22 "src/B.l"
 
-#line 783 "lex.yy.c"
+#line 786 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -848,293 +851,293 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 20 "src/B.l"
-{ BEGIN(COMMENT); printf("Entering comment\n"); }
+#line 23 "src/B.l"
+{ BEGIN(COMMENT); eprintf("Entering comment\n"); }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 21 "src/B.l"
-{ BEGIN(INITIAL); printf("Exiting comment\n"); }
+#line 24 "src/B.l"
+{ BEGIN(INITIAL); eprintf("Exiting comment\n"); }
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 22 "src/B.l"
+#line 25 "src/B.l"
 { /* newline in comment */ }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 23 "src/B.l"
+#line 26 "src/B.l"
 { /* other character in comment */ }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 25 "src/B.l"
+#line 28 "src/B.l"
 { return AUTO; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 26 "src/B.l"
+#line 29 "src/B.l"
 { return EXTRN; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 27 "src/B.l"
+#line 30 "src/B.l"
 { return IF; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 28 "src/B.l"
+#line 31 "src/B.l"
 { return ELSE; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 29 "src/B.l"
+#line 32 "src/B.l"
 { return WHILE; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 30 "src/B.l"
+#line 33 "src/B.l"
 { return SWITCH; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 31 "src/B.l"
+#line 34 "src/B.l"
 { return GOTO; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 32 "src/B.l"
+#line 35 "src/B.l"
 { return RETURN; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 33 "src/B.l"
+#line 36 "src/B.l"
 { return CASE; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 35 "src/B.l"
+#line 38 "src/B.l"
 { return ASSIGN; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 36 "src/B.l"
+#line 39 "src/B.l"
 { return ASSIGN_OR; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 37 "src/B.l"
+#line 40 "src/B.l"
 { return ERROR; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 38 "src/B.l"
+#line 41 "src/B.l"
 { return ERROR; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 39 "src/B.l"
+#line 42 "src/B.l"
 { return ERROR; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 40 "src/B.l"
+#line 43 "src/B.l"
 { return ERROR; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 41 "src/B.l"
+#line 44 "src/B.l"
 { return ERROR; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 42 "src/B.l"
+#line 45 "src/B.l"
 { return ERROR; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 43 "src/B.l"
+#line 46 "src/B.l"
 { return ERROR; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 44 "src/B.l"
+#line 47 "src/B.l"
 { return ASSIGN_LSHIFT; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 45 "src/B.l"
+#line 48 "src/B.l"
 { return ASSIGN_RSHIFT; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 46 "src/B.l"
+#line 49 "src/B.l"
 { return ASSIGN_MINUS; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 47 "src/B.l"
+#line 50 "src/B.l"
 { return ASSIGN_PLUS; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 48 "src/B.l"
+#line 51 "src/B.l"
 { return ASSIGN_MOD; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 49 "src/B.l"
+#line 52 "src/B.l"
 { return ASSIGN_MUL; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 50 "src/B.l"
+#line 53 "src/B.l"
 { return ASSIGN_DIVIDE; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 52 "src/B.l"
+#line 55 "src/B.l"
 { return OR; } //binary
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 53 "src/B.l"
+#line 56 "src/B.l"
 { return AMPERSAND; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 54 "src/B.l"
+#line 57 "src/B.l"
 { return EQ; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 55 "src/B.l"
+#line 58 "src/B.l"
 { return NEQ; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 56 "src/B.l"
+#line 59 "src/B.l"
 { return LT; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 57 "src/B.l"
+#line 60 "src/B.l"
 { return LE; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 58 "src/B.l"
+#line 61 "src/B.l"
 { return GT; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 59 "src/B.l"
+#line 62 "src/B.l"
 { return GE; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 60 "src/B.l"
+#line 63 "src/B.l"
 { return LSHIFT; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 61 "src/B.l"
+#line 64 "src/B.l"
 { return RSHIFT; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 62 "src/B.l"
+#line 65 "src/B.l"
 { return PLUS; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 63 "src/B.l"
+#line 66 "src/B.l"
 { return MINUS; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 64 "src/B.l"
+#line 67 "src/B.l"
 { return STAR; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 65 "src/B.l"
+#line 68 "src/B.l"
 { return SLASH; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 66 "src/B.l"
+#line 69 "src/B.l"
 { return MOD; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 68 "src/B.l"
+#line 71 "src/B.l"
 { return INC; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 69 "src/B.l"
+#line 72 "src/B.l"
 { return DEC; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 71 "src/B.l"
+#line 74 "src/B.l"
 { return NOT; }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 73 "src/B.l"
+#line 76 "src/B.l"
 { return LPAREN; }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 74 "src/B.l"
+#line 77 "src/B.l"
 { return RPAREN; }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 75 "src/B.l"
+#line 78 "src/B.l"
 { return LBRACE; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 76 "src/B.l"
+#line 79 "src/B.l"
 { return RBRACE; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 77 "src/B.l"
+#line 80 "src/B.l"
 { return LBRACKET; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 78 "src/B.l"
+#line 81 "src/B.l"
 { return RBRACKET; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 79 "src/B.l"
+#line 82 "src/B.l"
 { return SEMICOLON; }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 80 "src/B.l"
+#line 83 "src/B.l"
 { return COMMA; }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 81 "src/B.l"
+#line 84 "src/B.l"
 { return COLON; }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 82 "src/B.l"
+#line 85 "src/B.l"
 { return QUESTION; }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 84 "src/B.l"
+#line 87 "src/B.l"
 {
     yylval.ival = atoi(yytext);
     return NUMBER;
@@ -1142,7 +1145,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 89 "src/B.l"
+#line 92 "src/B.l"
 {
     yylval.sval = strdup(yytext);
     return IDENTIFIER;
@@ -1151,7 +1154,7 @@ YY_RULE_SETUP
 case 60:
 /* rule 60 can match eol */
 YY_RULE_SETUP
-#line 94 "src/B.l"
+#line 97 "src/B.l"
 {
     yylval.ival = process_charconst(yytext); // Simple char const: 'x' 
     if (yylval.ival == ERROR) {
@@ -1163,26 +1166,26 @@ YY_RULE_SETUP
 case 61:
 /* rule 61 can match eol */
 YY_RULE_SETUP
-#line 102 "src/B.l"
+#line 105 "src/B.l"
 {
-    yylval.sval = strdup(yytext);
+    yylval.sval = str_to_assembly_str(yytext); // String: "string"
     return STRING;
 }
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 107 "src/B.l"
+#line 110 "src/B.l"
 ;  // skip whitespace
 	YY_BREAK
 case 63:
 /* rule 63 can match eol */
 YY_RULE_SETUP
-#line 109 "src/B.l"
+#line 112 "src/B.l"
 { }
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 111 "src/B.l"
+#line 114 "src/B.l"
 {
     fprintf(stderr, "Unknown character: '%s' at line %d\n", yytext, yylineno);
     return ERROR;
@@ -1190,10 +1193,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 116 "src/B.l"
+#line 119 "src/B.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1197 "lex.yy.c"
+#line 1200 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(COMMENT):
 	yyterminate();
@@ -2211,7 +2214,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 116 "src/B.l"
+#line 119 "src/B.l"
 
 
 int is_valid_escape(char c) {
@@ -2268,23 +2271,70 @@ int process_charconst(const char* text) {
     return char_value; // Return your token
 }
 
-
-
-/* 
-int main() {
-    int token;
-    while ((token = yylex()) != 0) {  // 0 means end of input (EOF)
-        printf("Token: %d (Text: %s)", token, yytext);
-        
-        // Print the value of yylval based on the token type
-        if (token == NUMBER) {    // Example: If the token is a constant integer
-            printf(" (Value: %d)", yylval.ival);
-        } else if (token == IDENTIFIER) { // Example: If the token is an identifier
-            printf(" (Identifier: %s)", yylval.sval);
-        }
-        
-        printf("\n");
+int escape_char_to_asm(const char c, var_str_t *var_str) {
+    char *str = NULL;
+    switch (c) {
+        case '0':
+        case 'e':
+            str = "\", 0";
+            break ;
+        case '(':
+            str = "\", 123";
+            break ;
+        case ')':
+            str = "\", 125";
+            break ;
+        case 't': 
+            str = "\", 9";
+            break ;
+        case '\\':
+            str = "\", 92";
+            break ;
+        case '\'':
+            str = "\", 39";
+            break ;
+        case '"': 
+            str = "\", 34";
+            break ;
+        case 'n':
+            str = "\", 10";
+            break ;
+        default:
+            return 0;
     }
-    return 0;
-} */
+    append_str(str, var_str);
+    return 1;
+}
+
+char *str_to_assembly_str(const char *str) {
+    const char *p = str + 1; // Skip the opening "
+    var_str_t *var_str = create_vector(32);
+    int escape_flag = 0;
+
+    append_char('"', var_str); // Start the string
+    while (*p && *p != '"')
+    {
+        if (*p == '\\') {
+            p++;  // Skip the backslash
+            // Handle escape sequences here
+            if (!escape_char_to_asm(*p, var_str))
+                yyerror("Invalid escape sequence");
+            p++;
+            escape_flag = 1;
+            continue;
+        }
+        if (escape_flag) {
+            append_str(", \"", var_str);
+            escape_flag = 0;
+        }
+        append_char(*p, var_str); // Copy the character
+        p++;
+    }
+    if (escape_flag) {
+        append_str(", 0", var_str);
+    } else {
+        append_str("\", 0", var_str); // Close the string
+    }
+    return var_str->str; // Return the string
+}
 

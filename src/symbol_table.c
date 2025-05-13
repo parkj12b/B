@@ -6,12 +6,14 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/09 23:33:51 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/13 23:25:38 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "codegen.h"
 #include "symbol_table.h"
 #include "compiler_struct.h"
 #include "xmalloc.h"
@@ -35,7 +37,7 @@ void enter_scope(symbol_table_t *table)
 	new_scope->table = ht_create_table();
 	new_scope->parent = table;
 	current_depth++;
-	offset_stack[current_depth] = 8;
+	offset_stack[current_depth] = 0;
 	current_table = new_scope;
 }
 
@@ -96,4 +98,22 @@ void free_symbol_table(symbol_table_t *s_table)
 {
 	ht_destroy_table(s_table->table);
 	free(s_table);
+}
+
+char *add_temp_symbol()
+{
+	static int temp_count = 0;
+	symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
+	char name[16];
+	
+	symb->type = TEMP;
+	symb->size = 1;
+	offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
+	symb->location.offset = offset_stack[current_depth];
+	emit("sub esp, 4"); // TEMP symbols are 4 bytes. At least in my head
+	
+	snprintf(name, sizeof(name), "t_%d", temp_count++);
+	add_symbol(name, symb);
+	temp_count++;
+	return strdup(name);
 }
