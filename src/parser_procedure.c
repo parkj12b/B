@@ -6,11 +6,13 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/13 23:11:10 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/15 14:15:17 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdio.h>
+#include <string.h>
+#include "parser_procedure.h"
 #include "symbol_table.h"
 #include "compiler_struct.h"
 #include "xmalloc.h"
@@ -52,8 +54,7 @@ void add_auto_symb(list_t *var_decl_list)
 		if (var_decl->constant != NULL)
 		{
 			symb->size = var_decl->constant->value;
-			printf("here\n");
-			emit("sub esp %zd", symb->size * 4); // TODO: define word size for x86
+			emit("sub esp, %zd", symb->size * 4); // TODO: define word size for x86
 		}
 		else
 		{
@@ -114,41 +115,54 @@ void function_call(list_t *expr_list)
 	while (cur)
 	{
 		expr_t *expr = (expr_t *)cur->data;
-		if (expr->type == LVALUE || expr->type == TEMP || expr->type == RVALUE)
-		{
-			printf("push ");
-			print_lvalue(expr);
-			printf("\n");
-		}
-		else if (expr->type == CONSTANT)
+		if (expr->type == CONSTANT)
 		{
 			const_t *constant = &expr->constant;
 			printf("push ");
 			if (constant->type != CONST_STRING)
 				printf("dword ");
 			print_constant(&expr->constant);
+			cur = cur->prev;
+			continue;
+		}
+
+		symbol_t *symbol = get_symbol(expr->identifier);
+		if (symbol->type == PTR)
+		{
+			deref_to_reg(expr, "eax");
+			emit("push eax");
+		}
+		else
+		{
+			printf("push ");
+			print_lvalue(expr);
+			printf("\n");
 		}
 		cur = cur->prev;
 	}
 }
 
-void load_value_into_eax(expr_t *expr)
+void load_value_into_reg(expr_t *expr, char *reg)
 {
-	if (expr->type == LVALUE)
+	if (expr->type == LVALUE || expr->type == RVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP)
+		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP || symbol->type == PTR)
 		{
-			emit("mov eax, [ebp %+zd]", symbol->location.offset);
+			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
 		}
 		else
 		{
-			emit("mov eax, %s", expr->identifier);
+			emit("mov %s, %s", reg, expr->identifier);
+		}
+		if (symbol->type == PTR)
+		{
+			emit("mov %s, [%s]", reg, reg);
 		}
 	}
 	else if (expr->type == CONSTANT)
 	{
-		printf("mov eax, ");
+		printf("mov %s, ", reg);
 		print_constant(&(expr->constant));
 	}
 	else if (expr->type == IVAL_IDENTIFIER)
@@ -156,16 +170,36 @@ void load_value_into_eax(expr_t *expr)
 		symbol_t *symbol = get_symbol(expr->identifier);
 		if (symbol->type == LOCAL)
 		{
-			emit("mov eax, [ebp - %d]", symbol->location.offset);
+			emit("mov %s, [ebp - %d]", reg, symbol->location.offset);
 		}
 		else
 		{
-			emit("mov eax, %s", expr->identifier);
+			emit("mov %s, %s", reg, expr->identifier);
 		}
 	}
-	else
+}
+
+void load_address_reg(expr_t *expr, char *reg)
+{
+	if (expr->type == LVALUE)
 	{
-		emit("mov eax, %zu", expr->value);
+		symbol_t *symbol = get_symbol(expr->identifier);
+		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP || symbol->type == PTR)
+		{
+			emit("lea %s, [ebp %+zd]", reg, symbol->location.offset);
+		}
+		else
+		{
+			emit("lea %s, %s", reg, expr->identifier);
+		}
+	}
+	else if (expr->type == RVALUE)
+	{
+		symbol_t *symbol = get_symbol(expr->identifier);
+		if (symbol->type == LOCAL)
+			printf("lea %s, [ebp - %zd]\n", reg, symbol->location.offset);
+		else
+			printf("lea %s, %s\n", reg, expr->identifier);
 	}
 }
 
@@ -173,10 +207,9 @@ void register_to_lvalue(expr_t *expr, char *reg)
 {
 	symbol_t *symbol_l = get_symbol(expr->identifier);
 
-	if (symbol_l->type == LOCAL || symbol_l->type == AUTO 
-		|| symbol_l->type == TEMP)
+	if (symbol_l->type == LOCAL || symbol_l->type == AUTO || symbol_l->type == TEMP || symbol_l->type == PTR)
 	{
-		emit("mov [ebp %+d], %s", symbol_l->location.offset, reg);
+		emit("mov [ebp %+zd], %s", symbol_l->location.offset, reg);
 	}
 	else
 	{
@@ -184,24 +217,62 @@ void register_to_lvalue(expr_t *expr, char *reg)
 	}
 }
 
-void perform_assign_op(expr_t *rhs, char *op_command)
+void reg_to_deref(expr_t *expr, char *reg)
 {
-	if (rhs->type == LVALUE)
+	symbol_t *symbol = get_symbol(expr->identifier);
+	if (strcmp(reg, "eax") == 0)
 	{
-		printf("mov ebx, ");
-		print_lvalue(rhs);
-		printf("\n");
-		emit("%s eax, ebx", op_command);
-	}
-	else if (rhs->type == CONSTANT)
-	{
-		printf("%s eax, ", op_command);
-		print_constant(&rhs->constant);
+		emit("mov ebx, [ebp %+zd]", symbol->location.offset);
+		emit("mov [ebx], eax");
 	}
 	else
 	{
-		emit("%s eax, %zd", rhs->value, op_command);
+		emit("mov eax, [ebp %+zd]", symbol->location.offset);
+		emit("mov [%s], eax", reg);
 	}
+}
+
+void deref_to_reg(expr_t *expr, char *reg)
+{
+	symbol_t *symbol = get_symbol(expr->identifier);
+	if (strcmp(reg, "eax") == 0)
+	{
+		emit("mov ebx, [ebp %+zd]", symbol->location.offset);
+		emit("mov eax, [ebx]");
+	}
+	else
+	{
+		emit("mov edx, [ebp %+zd]", symbol->location.offset);
+		emit("mov %s, [edx]", reg);
+	}
+}
+
+void perform_assign_op(expr_t *rhs, char *op_command)
+{
+	if (rhs->type == CONSTANT)
+	{
+		printf("%s eax, ", op_command);
+		print_constant(&rhs->constant);
+		return;
+	}
+
+	if (rhs->type == LVALUE)
+	{
+		symbol_t *symbol = get_symbol(rhs->identifier);
+		if (symbol->type == PTR)
+		{
+			deref_to_reg(rhs, "ebx");
+		}
+		else
+		{
+			printf("mov ebx, ");
+			print_lvalue(rhs);
+			printf("\n");
+		}
+		emit("%s eax, ebx", op_command);
+		return;
+	}
+	emit("%s eax, %zd", op_command, rhs->value);
 }
 
 void perform_assign_div(expr_t *rhs)
@@ -222,6 +293,61 @@ void perform_assign_div(expr_t *rhs)
 	printf("idiv ebx\n");
 }
 
+void perform_binary(expr_t *rhs, int op)
+{
+	switch (op)
+	{
+	case ASSIGN:
+		break;
+	case ASSIGN_OR:
+	case OR:
+		perform_assign_op(rhs, "or");
+		break;
+	case ASSIGN_LSHIFT:
+	case LSHIFT:
+		perform_assign_op(rhs, "shl");
+		break;
+	case ASSIGN_RSHIFT:
+	case RSHIFT:
+		perform_assign_op(rhs, "shr");
+		break;
+	case ASSIGN_PLUS:
+	case PLUS:
+		perform_assign_op(rhs, "add");
+		break;
+	case ASSIGN_MINUS:
+	case MINUS:
+		perform_assign_op(rhs, "sub");
+		break;
+	case ASSIGN_MUL:
+	case STAR:
+		perform_assign_op(rhs, "imul");
+		break;
+	case ASSIGN_DIVIDE:
+	case SLASH:
+		perform_assign_div(rhs);
+		break;
+	case AMPERSAND:
+		perform_assign_op(rhs, "and");
+		break;
+	case MOD:
+		perform_assign_div(rhs);
+		emit("mov eax, edx");
+		break;
+	case EQ:
+	case NEQ:
+	case LT:
+	case LE:
+	case GT:
+	case GE:
+		perform_assign_op(rhs, "cmp");
+		break;
+	default:
+		yyerror("Invalid assignment operator");
+		return;
+	}
+}
+
 void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 {
 	if (lhs->type != LVALUE)
@@ -229,43 +355,66 @@ void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 		yyerror("LHS of assignment must be a Lvalue");
 		return;
 	}
-
 	// Load the RHS value into EAX
 	if (op == ASSIGN)
-		load_value_into_eax(rhs);
+		load_value_into_reg(rhs, "eax");
 	else
-		load_value_into_eax(lhs);
+		load_value_into_reg(lhs, "eax");
 
+	perform_binary(rhs, op);
+
+	symbol_t *symbol = get_symbol(lhs->identifier);
+	if (symbol->type == PTR)
+	{
+		reg_to_deref(lhs, "eax");
+	}
+	else
+	{
+		register_to_lvalue(lhs, "eax");
+	}
+	printf("\n");
+}
+
+void cmp_binary(int op)
+{
 	switch (op)
 	{
-	case ASSIGN:
+	case EQ:
+		emit("sete al");
 		break;
-	case ASSIGN_OR:
-		perform_assign_op(rhs, "or");
+	case NEQ:
+		emit("setne al");
 		break;
-	case ASSIGN_LSHIFT:
-		perform_assign_op(rhs, "shl");
+	case LT:
+		emit("setl al");
 		break;
-	case ASSIGN_RSHIFT:
-		perform_assign_op(rhs, "shr");
+	case LE:
+		emit("setle al");
 		break;
-	case ASSIGN_PLUS:
-		perform_assign_op(rhs, "add");
+	case GT:
+		emit("setg al");
 		break;
-	case ASSIGN_MINUS:
-		perform_assign_op(rhs, "sub");
-		break;
-	case ASSIGN_MUL:
-		perform_assign_op(rhs, "imul");
-		break;
-	case ASSIGN_DIVIDE:
-		perform_assign_div(rhs);
+	case GE:
+		emit("setge al");
 		break;
 	default:
-		yyerror("Invalid assignment operator");
+		yyerror("Invalid comparison operator");
 		return;
 	}
-	register_to_lvalue(lhs, "eax");
+	emit("movzx eax, al");
+}
+
+void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
+{
+	result->type = RVALUE;
+	result->identifier = add_temp_symbol(TEMP);
+	load_value_into_reg(lhs, "eax");
+	perform_binary(rhs, op);
+	if (op == EQ || op == NEQ || op == LT || op == LE || op == GT || op == GE)
+	{
+	}
+	symbol_t *symbol = get_symbol(result->identifier);
+	register_to_lvalue(result, "eax");
 	printf("\n");
 }
 
@@ -273,7 +422,7 @@ void negate_unary(expr_t *expr)
 {
 	if (expr->type == LVALUE)
 	{
-		load_value_into_eax(expr);
+		load_value_into_reg(expr, "eax");
 		emit("neg eax");
 		register_to_lvalue(expr, "eax");
 	}
@@ -291,7 +440,7 @@ void unary(expr_t *expr, char *op)
 {
 	if (expr->type == LVALUE)
 	{
-		load_value_into_eax(expr);
+		load_value_into_reg(expr, "eax");
 		emit("%s eax", op);
 		register_to_lvalue(expr, "eax");
 	}
@@ -303,4 +452,12 @@ void unary(expr_t *expr, char *op)
 	{
 		expr->value++;
 	}
+}
+
+void return_post_assign(expr_t *parent, expr_t *lhs)
+{
+	parent->type = RVALUE;
+	parent->identifier = add_temp_symbol(TEMP);
+	load_value_into_reg(lhs, "eax");
+	register_to_lvalue(parent, "eax");
 }

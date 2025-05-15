@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:48:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/08 22:11:27 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/14 22:24:51 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,7 +111,7 @@ void ht_expand_table(htable_t *table)
 	int old_capacity;
 	entry_t *old_entries;
 
-	printf("Expanding table from %d to %d. current count %d\n", table->capacity, table->capacity * 2, table->count);
+	eprintf("Expanding table from %d to %d. current count %d\n", table->capacity, table->capacity * 2, table->count);
 	old_capacity = table->capacity;
 	old_entries = table->entries;
 	table->capacity *= 2;

@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/13 21:48:03 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/14 20:51:25 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,6 +78,6 @@ void exit_scope(void);
 void *get_symbol(char *name);
 void print_symbol_table(symbol_table_t *s_table);
 void free_symbol_table(symbol_table_t *s_table);
-char *add_temp_symbol();
+char *add_temp_symbol(int symb_type);
 
 #endif

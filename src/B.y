@@ -77,8 +77,8 @@ int current_depth = 0;
 %type <opt> opt_paren_expr opt_expr opt_const opt_statement 
 %type <list> ident_list ival_list var_decl_list expr_list
 %type <constant> constant
-%type <statement> statement open_statement closed_statement simple_statement
-%type <expr> expr
+%type <statement> statement open_statement closed_statement
+%type <expr> expr binary assign
 %type <ival_s> ival
 %type <definition> definition
 %type <var_decl> var_decl
@@ -370,16 +370,14 @@ simple_statement:
     | RETURN opt_paren_expr SEMICOLON {
         /* Need something like return $2 */
         if ($2.kind != OPT_NONE) {
-            load_value_into_eax(&($2.value.expr));
+            load_value_into_reg(&($2.value.expr), "eax");
         }
     }
     | opt_expr SEMICOLON {
-        /* Need something like $1 */
-        // if ($1.kind != OPT_NONE) {
-        //     $$ = $1.value.expr;
-        // } else {
-        //     $$ = NULL;
-        // }
+        /* no need to propagate value */
+        /*
+            ex. x++;
+        */
     }
     ;
 
@@ -411,11 +409,7 @@ statement_prefix:
 if_expr:
     IF LPAREN expr RPAREN {
         /* Need something like if ($3) */
-        if ($3.type == LVALUE) {
-            emit("mov eax, %s", $3.identifier);
-        } else {
-            emit("mov eax, %zu", $3.value);
-        }
+        
     }
     ;
 
@@ -429,53 +423,56 @@ open_statement:
     | WHILE LPAREN expr RPAREN open_statement {
         /* Need something like while ($3) $5 */
     }
-    | statement_prefix open_statement {
-
-    }
+    | statement_prefix open_statement /* no action */
     ;
 
 closed_statement:
-    simple_statement {
-
-    }
+    simple_statement /* no action */
     | if_expr closed_statement ELSE closed_statement {
         /* Need something like if ($3) $5 */
     }
     | WHILE LPAREN expr RPAREN closed_statement {
         /* Need something like while ($3) $5 */
     }
-    | statement_prefix closed_statement {
-
-    }
+    | statement_prefix closed_statement /* no action */
     ;
 
 assign:
     expr ASSIGN expr %prec ASSIGN {
         perform_assign(&$1, ASSIGN, &$3);
+        return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_OR expr %prec ASSIGN_OR {
         perform_assign(&$1, ASSIGN_OR, &$3);
+        return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_LSHIFT expr %prec ASSIGN_LSHIFT {
         perform_assign(&$1, ASSIGN_LSHIFT, &$3);
+        return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_RSHIFT expr %prec ASSIGN_RSHIFT {
         perform_assign(&$1, ASSIGN_RSHIFT, &$3);
+        return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_MINUS expr %prec ASSIGN_MINUS {
         perform_assign(&$1, ASSIGN_MINUS, &$3);
+        return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_PLUS expr %prec ASSIGN_PLUS {
         perform_assign(&$1, ASSIGN_PLUS, &$3);
+        return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_MOD expr %prec ASSIGN_MOD {
         perform_assign(&$1, ASSIGN_MOD, &$3);
+        return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_MUL expr %prec ASSIGN_MUL {
         perform_assign(&$1, ASSIGN_MUL, &$3);
+        return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_DIVIDE expr %prec ASSIGN_DIVIDE {
         perform_assign(&$1, ASSIGN_DIVIDE, &$3);
+        return_post_assign(&$$, &$1);
     }  
     ;
 
@@ -544,10 +541,10 @@ expr:
         $$.identifier = strdup("eax");
     }
     | assign {
-
+        $$ = $1;
     }
     | binary {
-
+        $$ = $1;
     }
     | INC expr %prec INC {
         if ($2.type != LVALUE) {
@@ -568,11 +565,11 @@ expr:
             yyerror("LHS of increment must be a Lvalue");
         }
 
-        char *name = add_temp_symbol();
+        char *name = add_temp_symbol(TEMP);
         $$.type = TEMP;
         $$.identifier = name;
         
-        load_value_into_eax(&$1);
+        load_value_into_reg(&$1, "eax");
         register_to_lvalue(&$$, "eax");
         unary(&$1, "inc");
     }
@@ -581,11 +578,11 @@ expr:
             yyerror("LHS of decrement must be a Lvalue");
         }
         $$ = $1;
-        char *name = add_temp_symbol();
+        char *name = add_temp_symbol(TEMP);
         $$.type = TEMP;
         $$.identifier = name;
         
-        load_value_into_eax(&$1);
+        load_value_into_reg(&$1, "eax");
         register_to_lvalue(&$$, "eax");
         unary(&$1, "dec");
     }
@@ -595,48 +592,105 @@ expr:
     }
     | NOT expr %prec UNARY {
         $$ = $2;
-        char *name = add_temp_symbol();
+        char *name = add_temp_symbol(TEMP);
         $$.type = RVALUE;
         $$.identifier = name;
         
-        load_value_into_eax(&$2);
+        load_value_into_reg(&$2, "eax");
         emit("test eax, eax");
         emit("setz al");
         emit("movzx eax, al");
         register_to_lvalue(&$$, "eax");
     }
     | STAR expr %prec DEREF {
-        $$ = $2;
+        $$.identifier = add_temp_symbol(PTR);
+        load_value_into_reg(&$2, "eax");
+        register_to_lvalue(&$$, "eax");
         $$.type = LVALUE;
     }
     | AMPERSAND expr %prec ADDR_OF {
-
+        $$ = $2;
+        $$.type = RVALUE;
+        $$.identifier = add_temp_symbol(TEMP);
+        load_address_reg(&$2, "eax");
+        register_to_lvalue(&$$, "eax");
     }
     | expr LBRACKET expr RBRACKET {
-
+        load_address_reg(&$1, "eax");
+        load_value_into_reg(&$3, "ebx");
+        emit("imul ebx, 4");
+        emit("add ebx, eax");
+        $$.identifier = add_temp_symbol(PTR);
+        register_to_lvalue(&$$, "ebx");
+        $$.type = LVALUE;
     }
-    | expr QUESTION expr COLON expr %prec TERNARY {
-
+    | expr QUESTION {
+        $<expr>$.type = RVALUE;
+        $<expr>$.identifier = add_temp_symbol(TEMP);
+        load_value_into_reg(&$1, "eax");
+        emit("test eax, eax");
+        emit("jz .LF%zu", label_counter);
+    } expr COLON {
+        load_value_into_reg(&$4, "eax");
+        register_to_lvalue(&$<expr>3, "eax");
+        $<expr>$ = $<expr>3;
+        emit("jmp .LE%zu", label_counter);
+        emit(".LF%zu:", label_counter);        
+    } expr %prec TERNARY {
+        load_value_into_reg(&$7, "eax");
+        register_to_lvalue(&$<expr>6, "eax");
+        $$ = $<expr>6;
+        emit(".LE%zu:", label_counter);
+        label_counter++;
     }
     ;
 
 binary:
-     expr OR expr %prec OR {
-     }
-    | expr STAR expr %prec STAR
-    | expr AMPERSAND expr %prec AMPERSAND
-    | expr EQ expr %prec EQ
-    | expr NEQ expr %prec NEQ
-    | expr LT expr %prec LT
-    | expr LE expr %prec LE
-    | expr GT expr %prec GT
-    | expr GE expr %prec GE 
-    | expr LSHIFT expr %prec LSHIFT
-    | expr RSHIFT expr %prec RSHIFT
-    | expr MINUS expr %prec MINUS
-    | expr PLUS expr %prec PLUS
-    | expr MOD expr %prec MOD
-    | expr SLASH expr %prec SLASH
+    expr OR expr %prec OR {
+        binary_op(&$1, OR, &$3, &$$);
+    }
+    | expr STAR expr %prec STAR {
+        binary_op(&$1, STAR, &$3, &$$);
+    }
+    | expr AMPERSAND expr %prec AMPERSAND {
+        binary_op(&$1, AMPERSAND, &$3, &$$);
+    }
+    | expr EQ expr %prec EQ {
+        binary_op(&$1, EQ, &$3, &$$);
+    }
+    | expr NEQ expr %prec NEQ {
+        binary_op(&$1, NEQ, &$3, &$$);
+    }
+    | expr LT expr %prec LT {
+        binary_op(&$1, LT, &$3, &$$);
+    }
+    | expr LE expr %prec LE {
+        binary_op(&$1, LE, &$3, &$$);
+    }
+    | expr GT expr %prec GT {
+        binary_op(&$1, GT, &$3, &$$);
+    }
+    | expr GE expr %prec GE {
+        binary_op(&$1, GE, &$3, &$$);
+    }
+    | expr LSHIFT expr %prec LSHIFT {
+        binary_op(&$1, LSHIFT, &$3, &$$);
+    }
+    | expr RSHIFT expr %prec RSHIFT {
+        binary_op(&$1, RSHIFT, &$3, &$$);
+    }
+    | expr MINUS expr %prec MINUS {
+        binary_op(&$1, MINUS, &$3, &$$);
+    }
+    | expr PLUS expr %prec PLUS {
+        binary_op(&$1, PLUS, &$3, &$$);
+    }
+    | expr MOD expr %prec MOD { // TODO
+        binary_op(&$1, MOD, &$3, &$$);
+    }
+    | expr SLASH expr %prec SLASH {
+        binary_op(&$1, SLASH, &$3, &$$);
+    }
     ;
 
 %%

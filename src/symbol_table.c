@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/13 23:25:38 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/14 15:40:59 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,6 @@ void add_symbol(char *name, void *value)
 	ht_insert(current_table->table, name, value);
 }
 
-
 void *get_symbol(char *name)
 {
 	void *data = ht_search(current_table->table, name);
@@ -100,18 +99,18 @@ void free_symbol_table(symbol_table_t *s_table)
 	free(s_table);
 }
 
-char *add_temp_symbol()
+char *add_temp_symbol(int symb_type)
 {
 	static int temp_count = 0;
 	symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
 	char name[16];
-	
-	symb->type = TEMP;
+
+	symb->type = symb_type;
 	symb->size = 1;
 	offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
 	symb->location.offset = offset_stack[current_depth];
 	emit("sub esp, 4"); // TEMP symbols are 4 bytes. At least in my head
-	
+
 	snprintf(name, sizeof(name), "t_%d", temp_count++);
 	add_symbol(name, symb);
 	temp_count++;

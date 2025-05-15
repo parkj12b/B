@@ -2,7 +2,7 @@
 
 int main()
 {
-	int x = 5;
-	(x++);
-	printf("x: %d\n", (x));
+	int a;
+	a = getchar();
+	a ? printf("true\n") : printf("false\n");
 }

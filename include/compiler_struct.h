@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/04 23:26:15 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/13 21:39:29 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/14 15:29:47 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,7 @@ typedef enum
 	RVALUE,
 	CONSTANT,
 	TEMP,
+	PTR,
 } expr_type_t;
 
 /* expr */
