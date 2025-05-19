@@ -19,13 +19,14 @@ TEST_SRC = test_hash_table.c test_main.c hash_table.c
 TEST_SRCS = $(addprefix src/, $(TEST_SRC))
 
 SRC = 	codegen.c hash_table.c symbol_table.c vector.c parser.c \
-		string_table.c compiler_struct.c parser_procedure.c
+		string_table.c compiler_struct.c parser_procedure.c \
+		yyfree.c
 
 SRCS = $(addprefix src/, $(SRC))
 
 CC = cc
 
-CFLAGS = -lfl -g #-fsanitize=address
+CFLAGS = -lfl -g -fsanitize=address
 
 INCLUDES = -Iinclude -Ilibft/include
 

@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:33:28 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/15 14:43:02 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/18 21:46:10 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,5 +29,6 @@ void reg_to_deref(expr_t *expr, char *reg);
 void deref_to_reg(expr_t *expr, char *reg);
 void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result);
 void return_post_assign(expr_t *parent, expr_t *lhs);
+void emit_global_var(void);
 
 #endif

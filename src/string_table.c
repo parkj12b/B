@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/06 00:51:52 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/13 17:01:40 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/18 14:41:30 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ const char *st_get_label(const char *str)
 	char label[16];
 	char *label_ptr = NULL;
 
-	label_ptr = ht_search(string_table, str);
+	label_ptr = ht_search(string_table, str, 0);
 	if (label_ptr == NULL)
 	{
 		snprintf(label, sizeof(label), "s_%d", num_strings++);

@@ -1,8 +1,8 @@
 #include <stdio.h>
 
+int a[5] = {1};
+
 int main()
 {
-	int a;
-	a = getchar();
-	a ? printf("true\n") : printf("false\n");
+	
 }

@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:48:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/14 22:24:51 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/19 19:25:07 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,7 +87,7 @@ void ht_insert(htable_t *table, const char *key, void *value)
 	table->count++;
 }
 
-void *ht_search(htable_t *table, const char *key)
+void *ht_search(htable_t *table, const char *key, int get_entry)
 {
 	int index;
 	entry_t *entry;
@@ -96,13 +96,20 @@ void *ht_search(htable_t *table, const char *key)
 	entry = &table->entries[index];
 	while (entry->status != EMPTY)
 	{
-		if (entry->status == ACTIVE && strcmp(entry->key, key) == 0)
+		if (!(entry->status == ACTIVE && strcmp(entry->key, key) == 0))
+		{
+			index = ((index + 1) & (table->capacity - 1));
+			entry = &table->entries[index];
+			continue;
+		}
+		if (get_entry)
+			return entry;
+		else
 			return entry->value;
-		index = ((index + 1) & (table->capacity - 1));
-		entry = &table->entries[index];
 	}
 	return NULL;
 }
+
 
 #include <stdio.h>
 
@@ -122,8 +129,10 @@ void ht_expand_table(htable_t *table)
 
 	for (int i = 0; i < old_capacity; i++)
 	{
-		if (old_entries[i].status == ACTIVE)
+		if (old_entries[i].status == ACTIVE) {
 			ht_insert(table, old_entries[i].key, old_entries[i].value);
+			free((void *)old_entries[i].key);
+		}
 	}
 	free(old_entries);
 }
@@ -172,8 +181,10 @@ void ht_shrink_table(htable_t *table)
 
 	for (int i = 0; i < old_capacity; i++)
 	{
-		if (old_entries[i].status == ACTIVE)
+		if (old_entries[i].status == ACTIVE) {
 			ht_insert(table, old_entries[i].key, old_entries[i].value);
+			free((void *)old_entries[i].key);
+		}
 	}
 	free(old_entries);
 }

@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/14 20:51:25 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/19 16:23:47 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,12 @@ typedef enum
 	ARRAY, // word * size
 } symbol_type_t;
 
+typedef enum
+{
+	DECLARED,
+	REFERENCED,	
+} func_state_t;
+
 /**
  * size and array size in linked list can be different
  * if allocate size is bigger than initialization, allocate more
@@ -40,7 +46,7 @@ typedef enum
 typedef struct symbol_s
 {
 	scope_t type;
-	size_t size; // size for array or function. 0 for variable
+	ssize_t size; // size for array or function. 0 for variable
 	union
 	{
 		void *data; // data is null if not initialized
@@ -63,8 +69,11 @@ typedef struct symbol_table_s
 
 extern symbol_table_t *global_table;
 extern symbol_table_t *current_table;
+extern symbol_table_t *global_init;
+extern symbol_table_t *global_uninit;
 extern int offset_stack[512];
 extern int current_depth;
+extern htable_t *function_table;
 
 void init_symbol_table(void);
 void enter_scope(symbol_table_t *table);
@@ -79,5 +88,6 @@ void *get_symbol(char *name);
 void print_symbol_table(symbol_table_t *s_table);
 void free_symbol_table(symbol_table_t *s_table);
 char *add_temp_symbol(int symb_type);
+void add_symbol_table(symbol_table_t *table, const char *name, void *value);
 
 #endif

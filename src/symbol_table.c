@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/14 15:40:59 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/19 17:11:55 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,10 +22,18 @@
 
 void init_symbol_table(void)
 {
+	/* global table*/
 	global_table = (symbol_table_t *)xmalloc(sizeof(symbol_table_t));
 	global_table->table = ht_create_table();
 	global_table->parent = NULL;
+	
+	
+	global_init = (symbol_table_t *)xmalloc(sizeof(symbol_table_t));
+	global_uninit = (symbol_table_t *)xmalloc(sizeof(symbol_table_t));
+	global_init->table = ht_create_table();
+	global_uninit->table = ht_create_table();	
 	current_table = global_table;
+	function_table = ht_create_table();
 }
 
 void enter_scope(symbol_table_t *table)
@@ -52,33 +60,44 @@ void exit_scope(void)
 	}
 	current_table = old_table->parent;
 	print_table(old_table->table);
-	ht_destroy_table(old_table->table);
-	free(old_table);
+	free_symbol_table(old_table);	
 	current_depth--;
 }
 
-void add_symbol(char *name, void *value)
+void add_symbol_table(symbol_table_t *table, const char *name, void *value)
 {
-	void *data = ht_search(current_table->table, name);
-
+	void *data = ht_search(table->table, name, 0);
 	if (data != NULL)
 	{
 		yyerror(DUPSYM);
 	}
-	ht_insert(current_table->table, name, value);
+	ht_insert(table->table, name, value);
 }
 
-void *get_symbol(char *name)
+void add_symbol(char *name, void *value)
 {
-	void *data = ht_search(current_table->table, name);
+	add_symbol_table(current_table, name, value);
+}
+
+void *get_symbol_table(symbol_table_t *table, char *name)
+{
+	void *data = ht_search(table->table, name, 0);
 
 	if (data != NULL)
 	{
 		return data;
 	}
+	return data;
+}
 
+void *get_symbol(char *name)
+{
+	void *data = get_symbol_table(current_table, name);
+
+	if (data != NULL)
+		return data;
 	if (current_table->table != global_table->table)
-		data = ht_search(global_table->table, name);
+		data = ht_search(global_table->table, name, 0);
 	if (data != NULL)
 	{
 		return data;

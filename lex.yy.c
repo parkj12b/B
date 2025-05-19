@@ -2335,6 +2335,11 @@ char *str_to_assembly_str(const char *str) {
     } else {
         append_str("\", 0", var_str); // Close the string
     }
-    return var_str->str; // Return the string
+    char *return_str = malloc(var_str->size + 1);
+    memcpy(return_str, var_str->str, var_str->size);
+    return_str[var_str->size] = '\0'; // Null-terminate the string
+    free(var_str->str); // Free the original string
+    free(var_str); // Free the vector structure
+    return return_str; // Return the string
 }
 

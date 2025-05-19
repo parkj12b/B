@@ -6,18 +6,20 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/15 14:15:17 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/19 19:02:44 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdio.h>
 #include <string.h>
 #include "parser_procedure.h"
+#include "hash_table.h"
 #include "symbol_table.h"
 #include "compiler_struct.h"
 #include "xmalloc.h"
 #include "../B.tab.h"
 #include "codegen.h"
+#include "parser.h"
 
 extern symbol_table_t *current_table;
 extern void yyerror(const char *s);
@@ -25,8 +27,10 @@ extern void yyerror(const char *s);
 void add_argument_symb(char *name, list_t *list)
 {
 	node_t *cur = list->head;
+	node_t *prev = NULL;
 	size_t arg_num = 0;
 
+	
 	while (cur)
 	{
 		symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
@@ -35,7 +39,10 @@ void add_argument_symb(char *name, list_t *list)
 		symb->location.offset = 8 + arg_num * 4; // TODO: define word size for x86
 		add_symbol((char *)cur->data, symb);
 		arg_num++;
+		prev = cur;
+		free(cur->data);
 		cur = cur->next;
+		free(prev);
 	}
 }
 
@@ -104,13 +111,14 @@ void print_lvalue(expr_t *expr)
 	}
 	else
 	{
-		printf("%s", expr->identifier);
+		printf("dword [%s]", expr->identifier);
 	}
 }
 
 void function_call(list_t *expr_list)
 {
 	node_t *cur = expr_list->tail;
+	node_t *prev = NULL;
 
 	while (cur)
 	{
@@ -121,8 +129,14 @@ void function_call(list_t *expr_list)
 			printf("push ");
 			if (constant->type != CONST_STRING)
 				printf("dword ");
-			print_constant(&expr->constant);
+			print_constant(&expr->constant, 1);
+			
+			/* free */
+			free_expr(expr);
+			prev = cur;
+			free(cur->data);
 			cur = cur->prev;
+			free(prev);
 			continue;
 		}
 
@@ -138,7 +152,11 @@ void function_call(list_t *expr_list)
 			print_lvalue(expr);
 			printf("\n");
 		}
+		free_expr(expr);
+		prev = cur;
+		free(cur->data);
 		cur = cur->prev;
+		free(prev);
 	}
 }
 
@@ -163,7 +181,7 @@ void load_value_into_reg(expr_t *expr, char *reg)
 	else if (expr->type == CONSTANT)
 	{
 		printf("mov %s, ", reg);
-		print_constant(&(expr->constant));
+		print_constant(&(expr->constant), 1);
 	}
 	else if (expr->type == IVAL_IDENTIFIER)
 	{
@@ -252,7 +270,7 @@ void perform_assign_op(expr_t *rhs, char *op_command)
 	if (rhs->type == CONSTANT)
 	{
 		printf("%s eax, ", op_command);
-		print_constant(&rhs->constant);
+		print_constant(&rhs->constant, 1);
 		return;
 	}
 
@@ -287,7 +305,7 @@ void perform_assign_div(expr_t *rhs)
 	else if (rhs->type == CONSTANT)
 	{
 		printf("mov ebx, ");
-		print_constant(&rhs->constant);
+		print_constant(&rhs->constant, 1);
 		printf("\n");
 	}
 	printf("idiv ebx\n");
@@ -416,6 +434,9 @@ void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
 	symbol_t *symbol = get_symbol(result->identifier);
 	register_to_lvalue(result, "eax");
 	printf("\n");
+	/* free expr */
+	free_expr(lhs);
+	free_expr(rhs);
 }
 
 void negate_unary(expr_t *expr)
@@ -460,4 +481,75 @@ void return_post_assign(expr_t *parent, expr_t *lhs)
 	parent->identifier = add_temp_symbol(TEMP);
 	load_value_into_reg(lhs, "eax");
 	register_to_lvalue(parent, "eax");
+	free_expr(lhs);
+}
+
+static void emit_global_uninit(void)
+{
+	emit("section .bss");
+
+	htable_t *table = global_uninit->table;
+
+	for (int i = 0; i < table->capacity; i++)
+	{
+		if (table->entries[i].status != ACTIVE)
+			continue;
+		symbol_t *symbol = table->entries[i].value;
+		printf("%s resd %zu\n", table->entries[i].key, symbol->size);
+		if (symbol->value.data != NULL)
+			free(symbol->value.data);
+	}
+	printf("\n");
+}
+
+static void emit_global_init(void)
+{
+	emit("section .data");
+
+	htable_t *table = global_init->table;
+
+	for (int i = 0; i < table->capacity; i++)
+	{
+		if (table->entries[i].status != ACTIVE)
+			continue;
+		symbol_t *symbol = table->entries[i].value;
+		list_t *list = symbol->value.data;
+		
+		printf("%s dd ", table->entries[i].key);
+		node_t *cur = list->head;
+		node_t *prev = NULL;
+		while (cur && list->size--)
+		{
+			symbol->size--;
+			ival_t *ival = (ival_t *)(cur->data);
+			if (ival->type == IVAL_CONST)
+				print_constant(&(ival->value.constant), 0);
+			else
+				printf("%s", ival->value.identifier);
+			if (list->size != 0)
+				printf(", ");
+			prev = cur;
+			cur = cur->next;
+			free(ival);
+			free(prev);
+		}
+		if (symbol->size > 0) {
+			printf("\ndd %zd dup 0\n", symbol->size);
+		}
+		else
+			printf("\n");
+		free(symbol->value.data);
+	}
+	printf("\n");
+
+}
+
+void emit_global_var(void)
+{
+	if (global_uninit->table->count > 0)
+		emit_global_uninit();
+	if (global_init->table->count > 0)
+		emit_global_init();
+	free_symbol_table(global_uninit);
+	free_symbol_table(global_init);
 }

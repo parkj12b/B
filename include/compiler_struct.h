@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/04 23:26:15 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/14 15:29:47 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/18 22:48:34 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,6 +80,8 @@ typedef enum
 {
 	OPT_NONE,
 	OPT_VALUE,
+	INIT,
+	NOINIT,
 } opt_kind_t;
 
 typedef struct opt_s
@@ -136,6 +138,6 @@ typedef struct var_decl_s
 void add_node(list_t *list, node_t *node);
 node_t *create_node(void *data);
 list_t *create_list(void);
-void print_constant(const_t *constant);
+void print_constant(const_t *constant, int newline);
 
 #endif

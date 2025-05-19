@@ -12,6 +12,7 @@
 #include "parser.h"
 #include "parser_procedure.h"
 #include "compiler_struct.h"
+#include "yyfree.h"
 
 int yylex(void);
 extern int  yylineno;
@@ -19,14 +20,19 @@ extern FILE *yyin;
 FILE        *out = NULL;
 void yyerror(const char *msg);
 
+/* Memory management functions */
+
 /**
  * Since all table data is needed till the end of the program,
  * there is no need to free the symbol table.
 */
-symbol_table_t  *global_table = NULL;
-symbol_table_t  *current_table = NULL;
+symbol_table_t  *global_table;
+symbol_table_t  *current_table;
+symbol_table_t  *global_init;
+symbol_table_t  *global_uninit;
+htable_t        *function_table;
 htable_t        *string_table;
-char            *current_function = NULL;
+char            *current_function;
 size_t          label_counter = 1;
 
 char *buffer[512];
@@ -40,7 +46,7 @@ int current_depth = 0;
     #include "compiler_struct.h"
 }
 /* %glr-parser */
-/* %define parse.trace */
+%define parse.trace
 
 %union {
     /* primitive constants */
@@ -77,7 +83,6 @@ int current_depth = 0;
 %type <opt> opt_paren_expr opt_expr opt_const opt_statement 
 %type <list> ident_list ival_list var_decl_list expr_list
 %type <constant> constant
-%type <statement> statement open_statement closed_statement
 %type <expr> expr binary assign
 %type <ival_s> ival
 %type <definition> definition
@@ -97,16 +102,7 @@ int current_depth = 0;
 %right INC DEC UNARY DEREF ADDR_OF
 %left LBRACKET RBRACKET LPAREN RPAREN
 %right THEN ELSE
-%code {
-    /**
-     * push ebp
-     * mov ebp, esp
-     * sub esp, <size>
-     * ...
-     * leave = resetting stack pointer and restoring caller's base pointer
-     * ret
-    */
-}
+
 %%
 
 program:
@@ -122,19 +118,31 @@ definition:
     /* 7.1 simple definition */
     IDENTIFIER opt_ival_list SEMICOLON {
         symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+        symbol_t *symbol_cpy = (symbol_t *)xmalloc(sizeof(symbol_t));
+        
         if ($2.kind == OPT_NONE) {
-            add_symbol($1, symbol);
+            symbol->size = 1;
+            symbol->value.data = NULL;
+            memcpy(symbol_cpy, symbol, sizeof(symbol_t));
+            add_symbol_table(global_uninit, $1, symbol);
+            add_symbol($1, symbol_cpy);
         } else {
-            symbol->value.data = &($2.value.list);
-            symbol->size = $2.value.list.size;
-            // printf("size: %zu\n", symbol->size);
-            add_symbol($1, symbol);
+            list_t *list = (list_t *)xmalloc(sizeof(list_t));
+            memcpy(list, &$2.value.list, sizeof(list_t));
+
+            symbol->value.data = list;
+            symbol->size = list->size;
+            memcpy(symbol_cpy, symbol, sizeof(symbol_t));
+            add_symbol_table(global_init, $1, symbol);
+            add_symbol($1, symbol_cpy);
         }
         free($1);
     }
     /* 7.2 vector definitions */
     | IDENTIFIER LBRACKET opt_const RBRACKET opt_ival_list SEMICOLON {
         symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+        symbol_t *symbol_cpy = (symbol_t *)xmalloc(sizeof(symbol_t));
+        
         if ($3.kind != OPT_NONE) {
             const_t *constant = &($3.value.constant);
             if (constant->type != CONST_INT) {
@@ -145,16 +153,30 @@ definition:
 
         if ($5.kind == OPT_NONE) {
             symbol->value.data = NULL;
-            add_symbol($1, symbol);
+            memcpy(symbol_cpy, symbol, sizeof(symbol_t));
+            add_symbol_table(global_uninit, $1, symbol);
+            add_symbol($1, symbol_cpy);
         } else {
-            symbol->value.data = &($5.value.list);
-            add_symbol($1, symbol);
+            list_t *list = (list_t *)xmalloc(sizeof(list_t));
+            memcpy(list, &$5.value.list, sizeof(list_t));
+            symbol->value.data = list;
+            memcpy(symbol_cpy, symbol, sizeof(symbol_t));
+            add_symbol_table(global_init, $1, symbol);
+            add_symbol($1, symbol_cpy);
         }
         free($1);
     }
     /* 7.3 function definitions */
     | IDENTIFIER LPAREN opt_ident_list {
         symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
+
+        /* function table */
+        entry_t *entry = ht_search(function_table, $1, 1);
+        if (entry == NULL) {
+            ht_insert(function_table, $1, DECLARED);
+        } else {
+            entry->status = DECLARED;
+        }
 
         if ($3.kind == OPT_NONE) {
             symbol->size = 0;
@@ -224,9 +246,6 @@ ival_list:
         memcpy(ival, &$1, sizeof(ival_t));
         node_t *node = create_node(ival);
 
-        // ival_t *test_val = node->data;
-        // printf("%s\n", (char *)(test_val->value.constant.value));
-        // printf("%p\n", &($$));
         $$.size = 0;
         $$.head = NULL;
         $$.tail = NULL;
@@ -245,7 +264,7 @@ ival_list:
 ival :
     constant {
         $$.type = IVAL_CONST;
-        $$.value.constant = $1;
+        memcpy(&($$.value.constant), &$1, sizeof(const_t));
     }
     /* ival IDENTIFIERS can only be externally defined */
     | IDENTIFIER {
@@ -264,17 +283,17 @@ opt_const:
     }
     ;
 
+/* 4.1 primary expression */
 constant:
     CHARCONST {
         $$.type = CONST_CHAR;
         $$.value = $1;
-
     }
     | STRING {
         $$.type = CONST_STRING;
         const char *label = st_get_label($1);
         $$.value = (size_t)label;
-        // free($1);
+        free($1);
     }
     | NUMBER {
         $$.type = CONST_INT;
@@ -328,7 +347,6 @@ opt_statement:
         $$.kind = OPT_NONE;
     }
     | opt_statement statement {
-        $$.value.statement = $2;
         $$.kind = OPT_VALUE;
     }
     ;
@@ -357,27 +375,27 @@ opt_expr:
 statement:
     open_statement
     | closed_statement
-    | LBRACE opt_statement RBRACE {
-        
-    }
     ;
 
 simple_statement:
     GOTO expr SEMICOLON { //TODO: check if expr is a label and local
         /* Need something like goto $2 */
         emit("jmp .%s", $2.identifier);
+        free_expr(&$2);
     }
     | RETURN opt_paren_expr SEMICOLON {
         /* Need something like return $2 */
         if ($2.kind != OPT_NONE) {
             load_value_into_reg(&($2.value.expr), "eax");
+            free_expr(&$2.value.expr);
+        } else {
+            emit("mov eax, 0");
         }
     }
     | opt_expr SEMICOLON {
-        /* no need to propagate value */
-        /*
-            ex. x++;
-        */
+        if ($1.kind != OPT_NONE) {
+            free_expr(&$1.value.expr);
+        }
     }
     ;
 
@@ -397,6 +415,7 @@ colon:
     IDENTIFIER COLON {
         /* labels are local */
         emit(".%s:", $1);
+        free($1);
     }
     ;
 
@@ -409,69 +428,111 @@ statement_prefix:
 if_expr:
     IF LPAREN expr RPAREN {
         /* Need something like if ($3) */
-        
+        load_value_into_reg(&$3, "eax");
+        emit("test eax, eax");
+        emit("jz .LF%zu", label_counter);
+        free_expr(&$3);
+    }
+    ;
+
+if_closed:
+    if_expr closed_statement {
+        emit("jmp .LE%zu", label_counter);
+        emit(".LF%zu:", label_counter);
+    }
+
+while_expr:
+    WHILE LPAREN expr RPAREN {
+        /* Need something like while ($3) */
+        emit(".LS%zu:", label_counter);
+        load_value_into_reg(&$3, "eax");
+        emit("test eax, eax");
+        emit("jz .LF%zu", label_counter);
+        free_expr(&$3);
     }
     ;
 
 open_statement:
     if_expr statement {
+        emit(".LF%zu:", label_counter);
+        label_counter++;
         /* Need something like if ($3) $5 */
     }
-    | if_expr closed_statement ELSE open_statement {
+    | if_closed ELSE open_statement {
+        emit(".LE%zu:", label_counter);
+        label_counter++;
         /* Need something like if ($3) $5 else $7 */
     }
-    | WHILE LPAREN expr RPAREN open_statement {
+    | while_expr open_statement {
         /* Need something like while ($3) $5 */
+        emit("jmp .LS%zu", label_counter);
+        emit(".LF%zu:", label_counter);
+        label_counter++;
     }
     | statement_prefix open_statement /* no action */
     ;
 
 closed_statement:
     simple_statement /* no action */
-    | if_expr closed_statement ELSE closed_statement {
+    | if_closed ELSE closed_statement {
         /* Need something like if ($3) $5 */
+        emit(".LE%zu:", label_counter);
+        label_counter++;
     }
-    | WHILE LPAREN expr RPAREN closed_statement {
+    | while_expr closed_statement {
         /* Need something like while ($3) $5 */
+        emit("jmp .LS%zu", label_counter);
+        emit(".LF%zu:", label_counter);
+        label_counter++;
     }
     | statement_prefix closed_statement /* no action */
+    | LBRACE opt_statement RBRACE
     ;
 
 assign:
     expr ASSIGN expr %prec ASSIGN {
         perform_assign(&$1, ASSIGN, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_OR expr %prec ASSIGN_OR {
         perform_assign(&$1, ASSIGN_OR, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_LSHIFT expr %prec ASSIGN_LSHIFT {
         perform_assign(&$1, ASSIGN_LSHIFT, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_RSHIFT expr %prec ASSIGN_RSHIFT {
         perform_assign(&$1, ASSIGN_RSHIFT, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_MINUS expr %prec ASSIGN_MINUS {
         perform_assign(&$1, ASSIGN_MINUS, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_PLUS expr %prec ASSIGN_PLUS {
         perform_assign(&$1, ASSIGN_PLUS, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_MOD expr %prec ASSIGN_MOD {
         perform_assign(&$1, ASSIGN_MOD, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_MUL expr %prec ASSIGN_MUL {
         perform_assign(&$1, ASSIGN_MUL, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
     | expr ASSIGN_DIVIDE expr %prec ASSIGN_DIVIDE {
         perform_assign(&$1, ASSIGN_DIVIDE, &$3);
+        free_expr(&$3);
         return_post_assign(&$$, &$1);
     }  
     ;
@@ -524,6 +585,12 @@ expr:
         if ($1.type != LVALUE) {
             yyerror("LHS of function call must be a Lvalue");
         }
+        /* check if function exist */
+        entry_t *entry = ht_search(function_table, $1.identifier, 1);
+        if (entry == NULL) {
+            ht_insert(function_table, $1.identifier, (void *)REFERENCED);
+        }
+
         if ($3.kind != OPT_NONE) {
             function_call(&($3.value.list));
         }
@@ -538,7 +605,9 @@ expr:
             emit("add esp, %zu\n", arg_resb);
         }
         $$.type = RVALUE;
-        $$.identifier = strdup("eax");
+        $$.identifier = add_temp_symbol(TEMP);
+        register_to_lvalue(&$$, "eax");
+        free_expr(&$1);
     }
     | assign {
         $$ = $1;
@@ -572,12 +641,13 @@ expr:
         load_value_into_reg(&$1, "eax");
         register_to_lvalue(&$$, "eax");
         unary(&$1, "inc");
+        free_expr(&$1);
     }
     | expr DEC {
         if ($1.type != LVALUE) {
             yyerror("LHS of decrement must be a Lvalue");
         }
-        $$ = $1;
+
         char *name = add_temp_symbol(TEMP);
         $$.type = TEMP;
         $$.identifier = name;
@@ -585,6 +655,7 @@ expr:
         load_value_into_reg(&$1, "eax");
         register_to_lvalue(&$$, "eax");
         unary(&$1, "dec");
+        free_expr(&$1);
     }
     | MINUS expr %prec UNARY {
         negate_unary(&$2);
@@ -607,6 +678,7 @@ expr:
         load_value_into_reg(&$2, "eax");
         register_to_lvalue(&$$, "eax");
         $$.type = LVALUE;
+        free_expr(&$2);
     }
     | AMPERSAND expr %prec ADDR_OF {
         $$ = $2;
@@ -623,6 +695,8 @@ expr:
         $$.identifier = add_temp_symbol(PTR);
         register_to_lvalue(&$$, "ebx");
         $$.type = LVALUE;
+        free_expr(&$1);
+        free_expr(&$3);
     }
     | expr QUESTION {
         $<expr>$.type = RVALUE;
@@ -630,12 +704,13 @@ expr:
         load_value_into_reg(&$1, "eax");
         emit("test eax, eax");
         emit("jz .LF%zu", label_counter);
+        free_expr(&$1);
     } expr COLON {
         load_value_into_reg(&$4, "eax");
         register_to_lvalue(&$<expr>3, "eax");
         $<expr>$ = $<expr>3;
         emit("jmp .LE%zu", label_counter);
-        emit(".LF%zu:", label_counter);        
+        emit(".LF%zu:", label_counter);
     } expr %prec TERNARY {
         load_value_into_reg(&$7, "eax");
         register_to_lvalue(&$<expr>6, "eax");
@@ -751,7 +826,9 @@ int main(int argc, char **argv) {
     }
 
     exit_label();
-    /* print_table(string_table); */
+    emit_extern();
+    emit_global_var();
+
     st_print_table();
     // Clean up
     free_symbol_table(global_table);

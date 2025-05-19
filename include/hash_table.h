@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:26:22 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/13 15:29:54 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/18 14:40:48 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ void ht_insert(htable_t *table, const char *key, void *value);
 /**
  * * @brief Search for a value in the hash table by key.
  */
-void *ht_search(htable_t *table, const char *key);
+void *ht_search(htable_t *table, const char *key, int get_entry);
 
 /**
  * * @brief Expand the hash table to accommodate more entries.

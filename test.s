@@ -1,10 +1,13 @@
 	.file	"test.c"
 	.text
-	.section	.rodata
-.LC0:
-	.string	"true\n"
-.LC1:
-	.string	"false\n"
+	.globl	a
+	.data
+	.align 16
+	.type	a, @object
+	.size	a, 20
+a:
+	.long	1
+	.zero	16
 	.text
 	.globl	main
 	.type	main, @function
@@ -17,24 +20,8 @@ main:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
-	subq	$16, %rsp
-	call	getchar@PLT
-	movl	%eax, -4(%rbp)
-	cmpl	$0, -4(%rbp)
-	je	.L2
-	leaq	.LC0(%rip), %rax
-	movq	%rax, %rdi
 	movl	$0, %eax
-	call	printf@PLT
-	jmp	.L3
-.L2:
-	leaq	.LC1(%rip), %rax
-	movq	%rax, %rdi
-	movl	$0, %eax
-	call	printf@PLT
-.L3:
-	movl	$0, %eax
-	leave
+	popq	%rbp
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc

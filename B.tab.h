@@ -39,13 +39,13 @@
 # define YY_YY_B_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 39 "src/B.y"
+#line 45 "src/B.y"
 
     #include "compiler_struct.h"
 
@@ -124,7 +124,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 45 "src/B.y"
+#line 51 "src/B.y"
 
     /* primitive constants */
     size_t          ival;

@@ -1,25 +1,21 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   parser.h                                           :+:      :+:    :+:   */
+/*   yyfree.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/05/05 01:19:36 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 15:09:00 by minsepar         ###   ########.fr       */
+/*   Created: 2025/05/16 14:51:31 by minsepar          #+#    #+#             */
+/*   Updated: 2025/05/16 17:20:02 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef YYFREE_H
+# define YYFREE_H
 
-#include "compiler_struct.h"
+# include "compiler_struct.h"
 
-void init_assembly(void);
-void yyerror(const char *msg);
-void eprintf(const char *fmt, ...);
-void exit_label(void);
-void emit_extern(void);
-void free_expr(expr_t *expr);
+void yydelete_default(void *ptr);
+void yydelete_list(list_t *list);
 
 #endif
