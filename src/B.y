@@ -399,18 +399,21 @@ simple_statement:
     }
     ;
 
+/* 6.2 Automatic declaration */
 auto:
     AUTO var_decl_list SEMICOLON {
         add_auto_symb(&($2));
     }
     ;
 
+/* 6.1 External declaration */
 extrn:
     EXTRN ident_list SEMICOLON {
         add_extrn_symbol(&($2));
     }
     ;
 
+/* 6.3 Internal declaration */
 colon:
     IDENTIFIER COLON {
         /* labels are local */

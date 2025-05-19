@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 17:11:55 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/19 21:05:25 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include "xmalloc.h"
 #include "parser.h"
 #include "hash_table.h"
+#include "../B.tab.h"
 
 void init_symbol_table(void)
 {
@@ -77,6 +78,13 @@ void add_symbol_table(symbol_table_t *table, const char *name, void *value)
 void add_symbol(char *name, void *value)
 {
 	add_symbol_table(current_table, name, value);
+	if (current_table != global_table)
+	{
+		symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
+		memcpy(symb, value, sizeof(symbol_t));
+		symb->type = EXTRN;
+		add_symbol_table(global_table, name, symb);
+	}
 }
 
 void *get_symbol_table(symbol_table_t *table, char *name)
@@ -92,17 +100,8 @@ void *get_symbol_table(symbol_table_t *table, char *name)
 
 void *get_symbol(char *name)
 {
-	void *data = get_symbol_table(current_table, name);
-
-	if (data != NULL)
-		return data;
-	if (current_table->table != global_table->table)
-		data = ht_search(global_table->table, name, 0);
-	if (data != NULL)
-	{
-		return data;
-	}
-	return NULL;
+	symbol_t	*symb = get_symbol_table(current_table, name);
+	return		symb;
 }
 
 void print_symbol_table(symbol_table_t *s_table)

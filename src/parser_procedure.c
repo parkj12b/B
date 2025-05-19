@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 19:02:44 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/19 19:38:35 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,7 @@ void add_auto_symb(list_t *var_decl_list)
 		{
 			symb->size = var_decl->constant->value;
 			emit("sub esp, %zd", symb->size * 4); // TODO: define word size for x86
+			free(var_decl->constant);
 		}
 		else
 		{
