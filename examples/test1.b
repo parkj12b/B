@@ -117,6 +117,7 @@ if (1) {
 	b =/ 2;
 	printf("ASSIGN_DIVIDE\n10 / 2\nexpect: 5, result: %d\n", b);
 
+	
 }
 
 /* 7.3 */
