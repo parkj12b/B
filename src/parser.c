@@ -6,7 +6,7 @@
 /*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 21:07:53 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/19 23:12:58 by minsepar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,6 +58,7 @@ void emit_extern(void)
 		symbol_t *symbol = gtable->entries[i].value;
 		if (symbol->type == EXTRN)
 		{
+			printf("type: %d\n", symbol->type);
 			printf("extern %s\n", gtable->entries[i].key);
 		}
 	}

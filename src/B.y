@@ -445,13 +445,14 @@ if_closed:
     }
 
 while_expr:
-    WHILE LPAREN expr RPAREN {
-        /* Need something like while ($3) */
+    WHILE {
         emit(".LS%zu:", label_counter);
-        load_value_into_reg(&$3, "eax");
+
+    } LPAREN expr RPAREN {
+        load_value_into_reg(&$4, "eax");
         emit("test eax, eax");
         emit("jz .LF%zu", label_counter);
-        free_expr(&$3);
+        free_expr(&$4);
     }
     ;
 
