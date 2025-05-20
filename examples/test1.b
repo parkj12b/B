@@ -12,7 +12,7 @@ f[2] 1, 2, 3, 4, 5;
 /* 7.3 */
 main(argc, argv, envp) {
 	extrn a;
-	extrn b, e;
+	extrn b, e, c;
 	/* extrn; syntax error */
 printf("1 ---------\n");
 	/* Symbol not found
@@ -41,11 +41,13 @@ printf("3 ---------\n");
 printf("4 ---------\n");
 	printf("loop start\n");
 	b = 5;
+	/*
 	loop:
 		b--;
 		printf("b: %d\n", b);
 		if (b > 0)
 			goto loop;
+	*/
 	printf("loop finish\n");
 	/* error */
 	/* goto label; */
@@ -63,15 +65,57 @@ if (1) {
 			printf("no dangling else\n");
 	else
 		printf("else else else\n");
+
 	printf("expect 2 b: %d\n", b);
 	b = -5;
 /* 5.3 */
+
 	while (b++)
 	{
 		printf("b: %d\n", b);
 	}
+
 	printf("1 expected: %d\n", b);
 	
+/* 4.11 */
+	b = 2;
+	printf("ASSIGN\nexpect: 2, result: %d\n", b);
+
+	b =| 8;
+	printf("ASSIGN_OR\n2 | 8\nexpect: 10, result: %d\n", b);
+
+	b = 3;
+	b =<< 2;
+	printf("ASSIGN_LSHIFT\n3 << 2\nexpect: 12, result %d\n", b);
+
+	b = 12;
+	b =>> 2;
+	printf("ASSIGN_RSHIFT\n12 >> 2\nexpect: 3, result %d\n", b);
+	
+	b = 10;
+	b =- 7;
+	printf("ASSIGN_MINUS\n10 - 7\nexpect: 3, result %d\n", b);
+
+
+	b = 10;
+	b =+ 10;
+	printf("ASSIGN_PLUS\n10 + 10\nexpect: 20, result %d\n", b);
+
+	b = 10;
+	b =% 3;
+	printf("ASSIGN_MOD\n10 % 3\nexpect: 1, result %d\n", b);
+
+	b = 2;
+	b =* 4;
+	printf("ASSIGN_MUL\n2 * 4\nexpect: 8, result: %d\n", b);
+
+	b = 10;
+	b =/ 3;
+	printf("ASSIGN_DIVIDE\n10 / 3\nexpect: 3, result: %d\n", b);
+	
+	b = 10;
+	b =/ 2;
+	printf("ASSIGN_DIVIDE\n10 / 2\nexpect: 5, result: %d\n", b);
 
 }
 

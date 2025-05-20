@@ -106,8 +106,6 @@ void add_extrn_symbol(list_t *ident_list)
 void print_lvalue(expr_t *expr)
 {
 	symbol_t *symbol = get_symbol(expr->identifier);
-	if (symbol == NULL)
-		yyerror("Symbol not found");
 	if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP)
 	{
 		printf("dword [ebp %+zd]", symbol->location.offset);
@@ -144,8 +142,6 @@ void function_call(list_t *expr_list)
 		}
 
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol == NULL)
-			yyerror("Symbol not found");
 		if (symbol->type == PTR)
 		{
 			deref_to_reg(expr, "eax");
@@ -170,8 +166,6 @@ void load_value_into_reg(expr_t *expr, char *reg)
 	if (expr->type == LVALUE || expr->type == RVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol == NULL)
-			yyerror("Symbol not found");
 		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP || symbol->type == PTR)
 		{
 			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
@@ -193,11 +187,9 @@ void load_value_into_reg(expr_t *expr, char *reg)
 	else if (expr->type == IVAL_IDENTIFIER)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol == NULL)
-			yyerror("Symbol not found");
 		if (symbol->type == LOCAL)
 		{
-			emit("mov %s, [ebp - %d]", reg, symbol->location.offset);
+			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
 		}
 		else
 		{
@@ -211,8 +203,6 @@ void load_address_reg(expr_t *expr, char *reg)
 	if (expr->type == LVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol == NULL)
-			yyerror("Symbol not found");
 		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP || symbol->type == PTR)
 		{
 			emit("lea %s, [ebp %+zd]", reg, symbol->location.offset);
@@ -225,8 +215,6 @@ void load_address_reg(expr_t *expr, char *reg)
 	else if (expr->type == RVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol == NULL)
-			yyerror("Symbol not found");
 		if (symbol->type == LOCAL)
 			printf("lea %s, [ebp - %zd]\n", reg, symbol->location.offset);
 		else
@@ -237,8 +225,6 @@ void load_address_reg(expr_t *expr, char *reg)
 void register_to_lvalue(expr_t *expr, char *reg)
 {
 	symbol_t *symbol_l = get_symbol(expr->identifier);
-	if (symbol_l == NULL)
-		yyerror("Symbol not found");
 
 	if (symbol_l->type == LOCAL || symbol_l->type == AUTO || symbol_l->type == TEMP || symbol_l->type == PTR)
 	{
@@ -253,8 +239,6 @@ void register_to_lvalue(expr_t *expr, char *reg)
 void reg_to_deref(expr_t *expr, char *reg)
 {
 	symbol_t *symbol = get_symbol(expr->identifier);
-	if (symbol == NULL)
-		yyerror("Symbol not found");
 	
 	if (strcmp(reg, "eax") == 0)
 	{
@@ -271,8 +255,6 @@ void reg_to_deref(expr_t *expr, char *reg)
 void deref_to_reg(expr_t *expr, char *reg)
 {
 	symbol_t *symbol = get_symbol(expr->identifier);
-	if (symbol == NULL)
-		yyerror("Symbol not found");
 	
 	if (strcmp(reg, "eax") == 0)
 	{
@@ -298,8 +280,6 @@ void perform_assign_op(expr_t *rhs, char *op_command)
 	if (rhs->type == LVALUE)
 	{
 		symbol_t *symbol = get_symbol(rhs->identifier);
-		if (symbol == NULL)
-			yyerror("Symbol not found");
 		
 		if (symbol->type == PTR)
 		{
@@ -373,6 +353,7 @@ void perform_binary(expr_t *rhs, int op)
 		perform_assign_op(rhs, "and");
 		break;
 	case MOD:
+	case ASSIGN_MOD:
 		perform_assign_div(rhs);
 		emit("mov eax, edx");
 		break;
@@ -406,8 +387,6 @@ void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 	perform_binary(rhs, op);
 
 	symbol_t *symbol = get_symbol(lhs->identifier);
-	if (symbol == NULL)
-		yyerror("Symbol not found");
 	if (symbol->type == PTR)
 	{
 		reg_to_deref(lhs, "eax");

@@ -639,7 +639,7 @@ expr:
         }
 
         char *name = add_temp_symbol(TEMP);
-        $$.type = TEMP;
+        $$.type = RVALUE;
         $$.identifier = name;
         
         load_value_into_reg(&$1, "eax");
@@ -653,7 +653,7 @@ expr:
         }
 
         char *name = add_temp_symbol(TEMP);
-        $$.type = TEMP;
+        $$.type = RVALUE;
         $$.identifier = name;
         
         load_value_into_reg(&$1, "eax");

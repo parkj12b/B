@@ -107,9 +107,13 @@ void *get_symbol_table(symbol_table_t *table, char *name)
 void *get_symbol(char *name)
 {
 	symbol_t	*symb = get_symbol_table(current_table, name);
+	if (!symb)
+		yyerror("No such symbol found\n");
 	if (symb->type == EXTRN)
 	{
-		return get_symbol_table(global_table, name);
+		symb = get_symbol_table(global_table, name);
+		if (!symb)
+			yyerror("No such symbol found\n");
 	}
 	return symb;
 }
