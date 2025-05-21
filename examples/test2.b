@@ -1,19 +1,10 @@
-a 1, 2, 3, 4, 5;
-
+a[5] 1, 2, 3, 4, 5;
+b 1;
 main() {
-	extrn a;
-	auto b, c 2;
+	extrn a, b;
 
-	printf("expected: 2, %d\n", a[1]);
-	printf("expected: 2, %d\n", 1[a]);
-	printf("expected: 3, %d\n", a[2]);
-	printf("expected: 3, %d\n", 2[a]);
+	printf("%d*n", a[b]);
+	printf("%d*n", b[a]);
 
-	b = 1;
-	printf("expected: 2, %d\n", a[b]);
-	printf("expected: 2, %d\n", b[a]);
-	c[0] = 1;
-	/* printf("%d\n", a[c]); */
-	printf("expected: 2, %d\n", a[c[0]]);
 
 }

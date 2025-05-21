@@ -5,6 +5,9 @@
      1/2! + 1/3! + ... = .111....
    where the bases of the digits are 2, 3, 4, . . . */
 
+v[2000];
+n 2000;
+
 main() {
 	extrn putchar, n, v;
 	auto i, c, col, a;
@@ -25,7 +28,4 @@ main() {
 		if(!(++col % 5))
 			putchar(col % 50 ? ' ' : '*n');
 	}
-	/* putchar('*n*n'); */
 }
-v[2000];
-n 2000;

@@ -662,20 +662,24 @@ expr:
         free_expr(&$1);
     }
     | MINUS expr %prec UNARY {
-        negate_unary(&$2);
         $$ = $2;
+        $$.identifier = add_temp_symbol(TEMP);
+        $$.type = RVALUE;
+        load_value_into_reg(&$2, "eax");
+        emit("neg eax");
+        register_to_lvalue(&$$, "eax");
     }
     | NOT expr %prec UNARY {
         $$ = $2;
-        char *name = add_temp_symbol(TEMP);
+        $$.identifier = add_temp_symbol(TEMP);
         $$.type = RVALUE;
-        $$.identifier = name;
         
         load_value_into_reg(&$2, "eax");
         emit("test eax, eax");
         emit("setz al");
         emit("movzx eax, al");
         register_to_lvalue(&$$, "eax");
+        free_expr(&$2);
     }
     | STAR expr %prec DEREF {
         $$.identifier = add_temp_symbol(PTR);

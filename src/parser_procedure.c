@@ -438,24 +438,6 @@ void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
 	free_expr(rhs);
 }
 
-void negate_unary(expr_t *expr)
-{
-	if (expr->type == LVALUE)
-	{
-		load_value_into_reg(expr, "eax");
-		emit("neg eax");
-		register_to_lvalue(expr, "eax");
-	}
-	else if (expr->type == CONSTANT)
-	{
-		expr->constant.value = -expr->constant.value;
-	}
-	else
-	{
-		expr->value = -expr->value;
-	}
-}
-
 void unary(expr_t *expr, char *op)
 {
 	if (expr->type == LVALUE)
@@ -567,7 +549,7 @@ void vector_access(expr_t *base, expr_t *offset)
 			offset_symb = get_symbol(offset->identifier);
 			if (!is_vector(offset_symb))
 				yyerror("No vector in vector access");
-			load_address_reg(offset, "eax");	
+			load_address_reg(offset, "eax");
 		}
 	}
 	else
