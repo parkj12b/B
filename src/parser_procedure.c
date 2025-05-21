@@ -277,7 +277,7 @@ void perform_assign_op(expr_t *rhs, char *op_command)
 		return;
 	}
 
-	if (rhs->type == LVALUE)
+	if (rhs->type == LVALUE || rhs->type == RVALUE)
 	{
 		symbol_t *symbol = get_symbol(rhs->identifier);
 		
@@ -287,14 +287,11 @@ void perform_assign_op(expr_t *rhs, char *op_command)
 		}
 		else
 		{
-			printf("mov ebx, ");
-			print_lvalue(rhs);
-			printf("\n");
+			load_value_into_reg(rhs, "ebx");
 		}
 		emit("%s eax, ebx", op_command);
 		return;
 	}
-	emit("%s eax, %zd", op_command, rhs->value);
 }
 
 void perform_assign_div(expr_t *rhs)
@@ -313,6 +310,35 @@ void perform_assign_div(expr_t *rhs)
 		printf("\n");
 	}
 	printf("idiv ebx\n");
+}
+
+void cmp_binary(int op)
+{
+	switch (op)
+	{
+	case EQ:
+		emit("sete al");
+		break;
+	case NEQ:
+		emit("setne al");
+		break;
+	case LT:
+		emit("setl al");
+		break;
+	case LE:
+		emit("setle al");
+		break;
+	case GT:
+		emit("setg al");
+		break;
+	case GE:
+		emit("setge al");
+		break;
+	default:
+		yyerror("Invalid comparison operator");
+		return;
+	}
+	emit("movzx eax, al");
 }
 
 void perform_binary(expr_t *rhs, int op)
@@ -364,6 +390,7 @@ void perform_binary(expr_t *rhs, int op)
 	case GT:
 	case GE:
 		perform_assign_op(rhs, "cmp");
+		cmp_binary(op);
 		break;
 	default:
 		yyerror("Invalid assignment operator");
@@ -398,45 +425,12 @@ void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 	printf("\n");
 }
 
-void cmp_binary(int op)
-{
-	switch (op)
-	{
-	case EQ:
-		emit("sete al");
-		break;
-	case NEQ:
-		emit("setne al");
-		break;
-	case LT:
-		emit("setl al");
-		break;
-	case LE:
-		emit("setle al");
-		break;
-	case GT:
-		emit("setg al");
-		break;
-	case GE:
-		emit("setge al");
-		break;
-	default:
-		yyerror("Invalid comparison operator");
-		return;
-	}
-	emit("movzx eax, al");
-}
-
 void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
 {
 	result->type = RVALUE;
 	result->identifier = add_temp_symbol(TEMP);
 	load_value_into_reg(lhs, "eax");
 	perform_binary(rhs, op);
-	if (op == EQ || op == NEQ || op == LT || op == LE || op == GT || op == GE)
-	{
-		cmp_binary(op);
-	}
 	register_to_lvalue(result, "eax");
 	printf("\n");
 	/* free expr */
@@ -547,6 +541,45 @@ static void emit_global_init(void)
 	}
 	printf("\n");
 
+}
+
+void vector_access(expr_t *base, expr_t *offset)
+{
+	symbol_t *offset_symb;
+
+	if (base->type == LVALUE)
+	{
+		symbol_t *base_symb = get_symbol(base->identifier);
+		if (is_vector(base_symb)) {
+			load_address_reg(base, "eax");
+			if (offset->type == LVALUE) {
+				offset_symb = get_symbol(offset->identifier);
+				if (is_vector(offset_symb))
+					yyerror("Both base and offset are vector");
+			}
+			load_value_into_reg(offset, "ebx");
+		}
+		else {
+			load_value_into_reg(base, "ebx");
+			if (offset->type != LVALUE) {
+				yyerror("No vector in vector access");
+			}
+			offset_symb = get_symbol(offset->identifier);
+			if (!is_vector(offset_symb))
+				yyerror("No vector in vector access");
+			load_address_reg(offset, "eax");	
+		}
+	}
+	else
+	{
+		load_value_into_reg(base, "ebx");
+		if (offset->type != LVALUE)
+			yyerror("No vector in vector access");
+		offset_symb = get_symbol(offset->identifier);
+		if (!is_vector(offset_symb))
+			yyerror("No vector in vector access");
+		load_address_reg(offset, "eax");
+	}
 }
 
 void emit_global_var(void)

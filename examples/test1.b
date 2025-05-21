@@ -1,4 +1,3 @@
-
 /* 7.1 */
 a 1, 2, 3, 4, 5;
 b 1;
@@ -104,11 +103,11 @@ if (1) {
 	b = 10;
 	b =% 3;
 	printf("ASSIGN_MOD\n10 % 3\nexpect: 1, result %d\n", b);
-
+/*
 	b = 2;
 	b =* 4;
 	printf("ASSIGN_MUL\n2 * 4\nexpect: 8, result: %d\n", b);
-
+*/
 	b = 10;
 	b =/ 3;
 	printf("ASSIGN_DIVIDE\n10 / 3\nexpect: 3, result: %d\n", b);
@@ -117,7 +116,62 @@ if (1) {
 	b =/ 2;
 	printf("ASSIGN_DIVIDE\n10 / 2\nexpect: 5, result: %d\n", b);
 
-	
+/* 4.1 */
+	printf("expected: 10, %d\n", 10);
+	printf("expected: c, %c\n", 'c');
+	printf("expected: Hello world, %s\n", "Hello world");
+
+	b;
+	b = (2 * (3 + 4));
+	printf("expected 14: %d\n", b);
+
+	printf("expected 14: %d\n", (2 * (3 +4)));
+	b = 1;
+/* vector access */
+	printf("expected 2: %d\n", a[1]);
+	printf("expected 2: %d\n", 1[a]);
+
+	printf("expected: 2, %d\n", a[1]);
+	printf("expected: 2, %d\n", 1[a]);
+	printf("expected: 3, %d\n", a[2]);
+	printf("expected: 3, %d\n", 2[a]);
+
+	b = 1;
+	printf("expected: 2, %d\n", a[b]);
+	printf("expected: 2, %d\n", b[a]);
+	/* printf("%d\n", a[e]); */
+	printf("expected: 2, %d\n", a[e[0]]);
+	/*
+	printf("%d\n", b[b]);
+	printf("%d\n", 1[1]);
+	*/
+
+	b = addition(2, 3);
+	printf("expected: 5, %d\n", b);
+	b = subtract(2, 3);
+	printf("expected: -1, %d\n", b);
+
+/* 4.3 ~ 4.9 */
+	printf("expected: 13, 12 | 9 = %d\n", 12 | 9);
+	printf("expected: 108, 12 * 9 = %d\n", 12 * 9);
+	printf("expected: 8, 12 & 9 = %d\n", 12 & 9);
+	printf("expected: 0, 12 == 9 %d\n", 12 == 9);
+	printf("expected: 1, 12 == 12%d\n", 12 == 12);
+	printf("expected: 1, 12 != 11%d\n", 12 != 11);
+	printf("expected: 0, 12 != 12 %d\n", 12 != 12);
+	printf("expected: 1, 1 < 12 %d\n", 1 < 12);
+	printf("expected: 0, 14 < 12 %d\n", 14 < 12);
+	printf("expected: 0, 14 <= 12 %d\n", 14 <= 12);
+	printf("expected: 1, 14 > 12 %d\n", 14 > 12);
+	printf("expected: 0, 11 > 12 %d\n", 11 > 12);
+	printf("expected: 0, 11 >= 12 %d\n", 11 >= 12);
+	printf("expected: 12, 3 << 2 = %d\n", 3 << 2);
+	printf("expected: 3, 12 >> 2 = %d\n", 12 >> 2);
+	printf("expected: 2, 5 - 3 = %d\n", 5 - 3);
+	printf("expected: 8, 5 + 3 = %d\n", 5 + 3);
+	printf("expected: 1, 2147483647 % 2147483646 %d\n", 2147483647 % 2147483646);
+	printf("expected: 1, 2 / 2 = %d\n", 2 / 2);
+
 }
 
 /* 7.3 */

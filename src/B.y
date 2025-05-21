@@ -692,8 +692,7 @@ expr:
         register_to_lvalue(&$$, "eax");
     }
     | expr LBRACKET expr RBRACKET {
-        load_address_reg(&$1, "eax");
-        load_value_into_reg(&$3, "ebx");
+        vector_access(&$1, &$3);
         emit("imul ebx, 4");
         emit("add ebx, eax");
         $$.identifier = add_temp_symbol(PTR);

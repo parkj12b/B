@@ -148,3 +148,12 @@ char *add_temp_symbol(int symb_type)
 	temp_count++;
 	return strdup(name);
 }
+
+int is_vector(symbol_t *symb)
+{
+	eprintf("size: %zd\n", symb->size);
+
+	if (symb->size > 1)
+		return 1;
+	return 0;
+}

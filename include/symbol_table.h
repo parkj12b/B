@@ -89,5 +89,6 @@ void print_symbol_table(symbol_table_t *s_table);
 void free_symbol_table(symbol_table_t *s_table);
 char *add_temp_symbol(int symb_type);
 void add_symbol_table(symbol_table_t *table, const char *name, void *value);
+int is_vector(symbol_t *symb);
 
 #endif

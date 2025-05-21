@@ -30,5 +30,6 @@ void deref_to_reg(expr_t *expr, char *reg);
 void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result);
 void return_post_assign(expr_t *parent, expr_t *lhs);
 void emit_global_var(void);
+void vector_access(expr_t *base, expr_t *offset);
 
 #endif
