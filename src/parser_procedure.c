@@ -61,13 +61,13 @@ void add_auto_symb(list_t *var_decl_list)
 		if (var_decl->constant != NULL)
 		{
 			symb->size = var_decl->constant->value;
-			emit("sub esp, %zd", symb->size * 4); // TODO: define word size for x86
+			// emit("sub esp, %zd", symb->size * 4); // TODO: define word size for x86
 			free(var_decl->constant);
 		}
 		else
 		{
 			symb->size = 1;
-			emit("push 0");
+			// emit("push 0");
 		}
 
 		offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
@@ -166,20 +166,16 @@ void load_value_into_reg(expr_t *expr, char *reg)
 	if (expr->type == LVALUE || expr->type == RVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == PTR)
+		if (symbol->type == LOCAL || symbol->type == AUTO)
 		{
 			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
 		}
-		else if(symbol->type == TEMP) {
+		else if(symbol->type == TEMP || symbol->type == PTR) {
 			pop_into_register(reg);
 		}
 		else
 		{
 			emit("mov %s, dword [%s]", reg, expr->identifier);
-		}
-		if (symbol->type == PTR)
-		{
-			emit("mov %s, [%s]", reg, reg);
 		}
 	}
 	else if (expr->type == CONSTANT)
@@ -245,12 +241,14 @@ void reg_to_deref(expr_t *expr, char *reg)
 	
 	if (strcmp(reg, "eax") == 0)
 	{
-		emit("mov ebx, [ebp %+zd]", symbol->location.offset);
+		load_value_into_reg(expr, "ebx");
+		// emit("mov ebx, [ebp %+zd]", symbol->location.offset);
 		emit("mov [ebx], eax");
 	}
 	else
 	{
-		emit("mov eax, [ebp %+zd]", symbol->location.offset);
+		load_value_into_reg(expr, "eax");
+		// emit("mov eax, [ebp %+zd]", symbol->location.offset);
 		emit("mov [%s], eax", reg);
 	}
 }
@@ -261,12 +259,12 @@ void deref_to_reg(expr_t *expr, char *reg)
 	
 	if (strcmp(reg, "eax") == 0)
 	{
-		emit("mov ebx, [ebp %+zd]", symbol->location.offset);
+		load_value_into_reg(expr, "ebx");
 		emit("mov eax, [ebx]");
 	}
 	else
 	{
-		emit("mov edx, [ebp %+zd]", symbol->location.offset);
+		load_value_into_reg(expr, "edx");
 		emit("mov %s, [edx]", reg);
 	}
 }

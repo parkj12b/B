@@ -188,17 +188,23 @@ definition:
         emit("push ebp");
         emit("mov ebp, esp\n");
 
+        emit("jmp .%s.init", $1);
+        emit(".start:");
+
         enter_scope(current_table);
         assert(current_table != global_table);
         if ($3.kind != OPT_NONE) {
             add_argument_symb($1, &($3.value.list));
         }
         print_symbol_table(current_table);
-        free($1);
     } RPAREN statement {
         emit("jmp exit\n");
+        emit(".%s.init:", $1);
+        emit("sub esp, %d", -offset_stack[current_depth]);
+        emit("jmp .start\n");
         exit_scope();
         assert(current_table == global_table);
+        free($1);
         
     }
     ;
@@ -688,31 +694,34 @@ expr:
         load_address_reg(&$2, "eax");
         $$.identifier = add_temp_symbol(TEMP, "eax");
     }
-    | expr LBRACKET expr RBRACKET {
+    | expr LBRACKET expr RBRACKET { //TODO: decide what to do with vector_access. LVALUE
         vector_access(&$1, &$3);
         emit("imul ebx, 4");
         emit("add ebx, eax");
-        $$.identifier = add_temp_symbol(PTR, "ebx");
+        emit("mov ebx, [ebx]");
+        $$.identifier = add_temp_symbol(TEMP, "ebx");
         $$.type = LVALUE;
         free_expr(&$1);
         free_expr(&$3);
     }
     | expr QUESTION {
+        load_value_into_reg(&$1, "eax");
         $<expr>$.type = RVALUE;
         $<expr>$.identifier = add_temp_symbol(TEMP, NULL);
-        load_value_into_reg(&$1, "eax");
         emit("test eax, eax");
         emit("jz .LF%zu", label_counter);
         free_expr(&$1);
     } expr COLON {
         load_value_into_reg(&$4, "eax");
-        register_to_lvalue(&$<expr>3, "eax");
+        emit("push eax");
+        // register_to_lvalue(&$<expr>3, "eax");
         $<expr>$ = $<expr>3;
         emit("jmp .LE%zu", label_counter);
         emit(".LF%zu:", label_counter);
     } expr %prec TERNARY {
         load_value_into_reg(&$7, "eax");
-        register_to_lvalue(&$<expr>6, "eax");
+        emit("push eax");
+        // register_to_lvalue(&$<expr>6, "eax");
         $$ = $<expr>6;
         emit(".LE%zu:", label_counter);
         label_counter++;

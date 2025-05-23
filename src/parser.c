@@ -82,6 +82,5 @@ void increase_label()
 
 void pop_into_register(char *reg)
 {
-	offset_stack[current_depth] += 4;
 	emit("pop %s", reg);
 }

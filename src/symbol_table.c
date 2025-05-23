@@ -139,12 +139,10 @@ char *add_temp_symbol(int symb_type, char *reg)
 
 	symb->type = symb_type;
 	symb->size = 1;
-	offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
-	symb->location.offset = offset_stack[current_depth];
+	// offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
+	// symb->location.offset = offset_stack[current_depth];
 	if (reg != NULL)
 		emit("push %s", reg); // TEMP symbols are 4 bytes. At least in my head
-	else
-		emit("sub esp, 4");
 	snprintf(name, sizeof(name), "t_%d", temp_count++);
 	add_symbol(name, symb);
 	temp_count++;
