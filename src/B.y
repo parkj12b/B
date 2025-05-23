@@ -33,12 +33,12 @@ symbol_table_t  *global_uninit;
 htable_t        *function_table;
 htable_t        *string_table;
 char            *current_function;
-size_t          label_counter = 1;
-
-char *buffer[512];
+size_t          label_counter = 0;
+size_t          label_index = 0;
+size_t          label_stack[128];
 
 /* offset stack */
-int offset_stack[512];
+int offset_stack[128];
 int current_depth = 0;
 %}
 
@@ -379,12 +379,10 @@ statement:
 
 simple_statement:
     GOTO expr SEMICOLON { //TODO: check if expr is a label and local
-        /* Need something like goto $2 */
         emit("jmp .%s", $2.identifier);
         free_expr(&$2);
     }
     | RETURN opt_paren_expr SEMICOLON {
-        /* Need something like return $2 */
         if ($2.kind != OPT_NONE) {
             load_value_into_reg(&($2.value.expr), "eax");
             free_expr(&$2.value.expr);
@@ -394,7 +392,15 @@ simple_statement:
     }
     | opt_expr SEMICOLON {
         if ($1.kind != OPT_NONE) {
+            expr_t *expr = &$1.value.expr;
+            if (expr->type != CONSTANT)
+            {
+                symbol_t *symb = get_symbol(expr->identifier);
+                if (symb->type == TEMP)
+                    pop_into_register("eax");
+            }
             free_expr(&$1.value.expr);
+
         }
     }
     ;
@@ -430,48 +436,47 @@ statement_prefix:
 
 if_expr:
     IF LPAREN expr RPAREN {
-        /* Need something like if ($3) */
         load_value_into_reg(&$3, "eax");
         emit("test eax, eax");
-        emit("jz .LF%zu", label_counter);
+        label_stack[label_index] = label_counter;
+        emit("jz .LF%zu", label_stack[label_index]);
         free_expr(&$3);
+        increase_label();
     }
     ;
 
 if_closed:
     if_expr closed_statement {
-        emit("jmp .LE%zu", label_counter);
-        emit(".LF%zu:", label_counter);
+        label_index--;
+        emit("jmp .LE%zu", label_stack[label_index]);
+        emit(".LF%zu:", label_stack[label_index]);
     }
 
 while_expr:
     WHILE {
-        emit(".LS%zu:", label_counter);
-
+        label_stack[label_index] = label_counter; 
+        emit(".LS%zu:", label_stack[label_index]);
     } LPAREN expr RPAREN {
         load_value_into_reg(&$4, "eax");
         emit("test eax, eax");
-        emit("jz .LF%zu", label_counter);
+        emit("jz .LF%zu", label_stack[label_index]);
+        increase_label();
         free_expr(&$4);
     }
     ;
 
 open_statement:
     if_expr statement {
-        emit(".LF%zu:", label_counter);
-        label_counter++;
-        /* Need something like if ($3) $5 */
+        label_index--;
+        emit(".LF%zu:", label_stack[label_index]);
     }
     | if_closed ELSE open_statement {
-        emit(".LE%zu:", label_counter);
-        label_counter++;
-        /* Need something like if ($3) $5 else $7 */
+        emit(".LE%zu:", label_stack[label_index]);
     }
     | while_expr open_statement {
-        /* Need something like while ($3) $5 */
-        emit("jmp .LS%zu", label_counter);
-        emit(".LF%zu:", label_counter);
-        label_counter++;
+        label_index--;
+        emit("jmp .LS%zu", label_stack[label_index]);
+        emit(".LF%zu:", label_stack[label_index]);
     }
     | statement_prefix open_statement /* no action */
     ;
@@ -479,15 +484,12 @@ open_statement:
 closed_statement:
     simple_statement /* no action */
     | if_closed ELSE closed_statement {
-        /* Need something like if ($3) $5 */
-        emit(".LE%zu:", label_counter);
-        label_counter++;
+        emit(".LE%zu:", label_stack[label_index]);
     }
     | while_expr closed_statement {
-        /* Need something like while ($3) $5 */
-        emit("jmp .LS%zu", label_counter);
-        emit(".LF%zu:", label_counter);
-        label_counter++;
+        label_index--;
+        emit("jmp .LS%zu", label_stack[label_index]);
+        emit(".LF%zu:", label_stack[label_index]);
     }
     | statement_prefix closed_statement /* no action */
     | LBRACE opt_statement RBRACE
@@ -609,8 +611,7 @@ expr:
             emit("add esp, %zu\n", arg_resb);
         }
         $$.type = RVALUE;
-        $$.identifier = add_temp_symbol(TEMP);
-        register_to_lvalue(&$$, "eax");
+        $$.identifier = add_temp_symbol(TEMP, "eax");
         free_expr(&$1);
     }
     | assign {
@@ -638,12 +639,10 @@ expr:
             yyerror("LHS of increment must be a Lvalue");
         }
 
-        char *name = add_temp_symbol(TEMP);
+        load_value_into_reg(&$1, "eax");
+        char *name = add_temp_symbol(TEMP, "eax");
         $$.type = RVALUE;
         $$.identifier = name;
-        
-        load_value_into_reg(&$1, "eax");
-        register_to_lvalue(&$$, "eax");
         unary(&$1, "inc");
         free_expr(&$1);
     }
@@ -652,62 +651,55 @@ expr:
             yyerror("LHS of decrement must be a Lvalue");
         }
 
-        char *name = add_temp_symbol(TEMP);
+        load_value_into_reg(&$1, "eax");
+        char *name = add_temp_symbol(TEMP, "eax");
         $$.type = RVALUE;
         $$.identifier = name;
-        
-        load_value_into_reg(&$1, "eax");
-        register_to_lvalue(&$$, "eax");
         unary(&$1, "dec");
         free_expr(&$1);
     }
     | MINUS expr %prec UNARY {
         $$ = $2;
-        $$.identifier = add_temp_symbol(TEMP);
-        $$.type = RVALUE;
         load_value_into_reg(&$2, "eax");
         emit("neg eax");
-        register_to_lvalue(&$$, "eax");
+        $$.type = RVALUE;
+        $$.identifier = add_temp_symbol(TEMP, "eax");
     }
     | NOT expr %prec UNARY {
         $$ = $2;
-        $$.identifier = add_temp_symbol(TEMP);
-        $$.type = RVALUE;
         
         load_value_into_reg(&$2, "eax");
         emit("test eax, eax");
         emit("setz al");
         emit("movzx eax, al");
-        register_to_lvalue(&$$, "eax");
+        $$.type = RVALUE;
+        $$.identifier = add_temp_symbol(TEMP, "eax");
         free_expr(&$2);
     }
     | STAR expr %prec DEREF {
-        $$.identifier = add_temp_symbol(PTR);
         load_value_into_reg(&$2, "eax");
-        register_to_lvalue(&$$, "eax");
+        $$.identifier = add_temp_symbol(PTR, "eax");
         $$.type = LVALUE;
         free_expr(&$2);
     }
     | AMPERSAND expr %prec ADDR_OF {
         $$ = $2;
         $$.type = RVALUE;
-        $$.identifier = add_temp_symbol(TEMP);
         load_address_reg(&$2, "eax");
-        register_to_lvalue(&$$, "eax");
+        $$.identifier = add_temp_symbol(TEMP, "eax");
     }
     | expr LBRACKET expr RBRACKET {
         vector_access(&$1, &$3);
         emit("imul ebx, 4");
         emit("add ebx, eax");
-        $$.identifier = add_temp_symbol(PTR);
-        register_to_lvalue(&$$, "ebx");
+        $$.identifier = add_temp_symbol(PTR, "ebx");
         $$.type = LVALUE;
         free_expr(&$1);
         free_expr(&$3);
     }
     | expr QUESTION {
         $<expr>$.type = RVALUE;
-        $<expr>$.identifier = add_temp_symbol(TEMP);
+        $<expr>$.identifier = add_temp_symbol(TEMP, NULL);
         load_value_into_reg(&$1, "eax");
         emit("test eax, eax");
         emit("jz .LF%zu", label_counter);

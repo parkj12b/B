@@ -131,7 +131,7 @@ void free_symbol_table(symbol_table_t *s_table)
 	free(s_table);
 }
 
-char *add_temp_symbol(int symb_type)
+char *add_temp_symbol(int symb_type, char *reg)
 {
 	static int temp_count = 0;
 	symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
@@ -141,8 +141,10 @@ char *add_temp_symbol(int symb_type)
 	symb->size = 1;
 	offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
 	symb->location.offset = offset_stack[current_depth];
-	emit("sub esp, 4"); // TEMP symbols are 4 bytes. At least in my head
-
+	if (reg != NULL)
+		emit("push %s", reg); // TEMP symbols are 4 bytes. At least in my head
+	else
+		emit("sub esp, 4");
 	snprintf(name, sizeof(name), "t_%d", temp_count++);
 	add_symbol(name, symb);
 	temp_count++;

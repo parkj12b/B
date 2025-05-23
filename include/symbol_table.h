@@ -71,7 +71,7 @@ extern symbol_table_t *global_table;
 extern symbol_table_t *current_table;
 extern symbol_table_t *global_init;
 extern symbol_table_t *global_uninit;
-extern int offset_stack[512];
+extern int offset_stack[];
 extern int current_depth;
 extern htable_t *function_table;
 
@@ -87,7 +87,7 @@ void exit_scope(void);
 void *get_symbol(char *name);
 void print_symbol_table(symbol_table_t *s_table);
 void free_symbol_table(symbol_table_t *s_table);
-char *add_temp_symbol(int symb_type);
+char *add_temp_symbol(int symb_type, char *reg);
 void add_symbol_table(symbol_table_t *table, const char *name, void *value);
 int is_vector(symbol_t *symb);
 

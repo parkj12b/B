@@ -21,5 +21,11 @@ void eprintf(const char *fmt, ...);
 void exit_label(void);
 void emit_extern(void);
 void free_expr(expr_t *expr);
+void increase_label();
+void pop_into_register(char *reg);
+
+extern size_t label_counter;
+extern size_t label_index;
+extern size_t label_stack[];
 
 #endif

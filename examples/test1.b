@@ -75,6 +75,35 @@ if (1) {
 	}
 
 	printf("1 expected: %d\n", b);
+
+	b = -2;
+	while (++b) {
+		printf("b: %d\n", b);
+	}
+
+	printf("0 expected: %d\n", b);
+
+	b = 2 ;
+	while (--b) {
+		printf("b = %d\n", b);
+	}
+
+	printf("0 expected: %d\n", b);
+
+
+	b = 2 ;
+	while (b--) {
+		printf("b = %d\n", b);
+	}
+
+	printf("-1 expected: %d\n", b);
+
+		b = 6 ;
+	while (b =- 2) {
+		printf("b = %d\n", b);
+	}
+
+	printf("0 expected: %d\n", b);
 	
 /* 4.11 */
 	b = 2;
@@ -102,7 +131,7 @@ if (1) {
 
 	b = 10;
 	b =% 3;
-	printf("ASSIGN_MOD\n10 % 3\nexpect: 1, result %d\n", b);
+	printf("ASSIGN_MOD\n10 %% 3\nexpect: 1, result %d\n", b);
 /*
 	b = 2;
 	b =* 4;
@@ -169,16 +198,17 @@ if (1) {
 	printf("expected: 3, 12 >> 2 = %d\n", 12 >> 2);
 	printf("expected: 2, 5 - 3 = %d\n", 5 - 3);
 	printf("expected: 8, 5 + 3 = %d\n", 5 + 3);
-	printf("expected: 1, 2147483647 % 2147483646 %d\n", 2147483647 % 2147483646);
+	printf("expected: 1, 2147483647 %% 2147483646 %d\n", 2147483647 % 2147483646);
 	printf("expected: 1, 2 / 2 = %d\n", 2 / 2);
 
 }
 
 /* 7.3 */
 addition(a, b) {
+	printf("%d, %d\n", a, b);
 	label:
-	return (a + b);
+	return ((a)+(b));
 }
 
 subtract(a, b)
-	return (a - b);
+	return ((a + 1) - (b + 1));

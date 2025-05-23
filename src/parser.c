@@ -10,12 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <sys/errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include "codegen.h"
 #include "symbol_table.h"
 #include "compiler_struct.h"
 #include "../B.tab.h"
+#include "parser.h"
 
 void init_assembly(void)
 {
@@ -58,7 +60,6 @@ void emit_extern(void)
 		symbol_t *symbol = gtable->entries[i].value;
 		if (symbol->type == EXTRN)
 		{
-			printf("type: %d\n", symbol->type);
 			printf("extern %s\n", gtable->entries[i].key);
 		}
 	}
@@ -71,4 +72,16 @@ void free_expr(expr_t *expr)
 		free(expr->identifier);
 		return ;
 	}
+}
+
+void increase_label()
+{
+	label_index++;
+	label_counter++;
+}
+
+void pop_into_register(char *reg)
+{
+	offset_stack[current_depth] += 4;
+	emit("pop %s", reg);
 }

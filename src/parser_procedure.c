@@ -166,9 +166,12 @@ void load_value_into_reg(expr_t *expr, char *reg)
 	if (expr->type == LVALUE || expr->type == RVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP || symbol->type == PTR)
+		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == PTR)
 		{
 			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
+		}
+		else if(symbol->type == TEMP) {
+			pop_into_register(reg);
 		}
 		else
 		{
@@ -268,48 +271,18 @@ void deref_to_reg(expr_t *expr, char *reg)
 	}
 }
 
-void perform_assign_op(expr_t *rhs, char *op_command)
+void perform_assign_op(char *op_command)
 {
-	if (rhs->type == CONSTANT)
-	{
-		printf("%s eax, ", op_command);
-		print_constant(&rhs->constant, 1);
-		return;
-	}
-
-	if (rhs->type == LVALUE || rhs->type == RVALUE)
-	{
-		symbol_t *symbol = get_symbol(rhs->identifier);
-		
-		if (symbol->type == PTR)
-		{
-			deref_to_reg(rhs, "ebx");
-		}
-		else
-		{
-			load_value_into_reg(rhs, "ebx");
-		}
-		emit("%s eax, ebx", op_command);
-		return;
-	}
+	if (strcmp(op_command, "shl") == 0 || strcmp(op_command, "shr") == 0)
+		emit("%s eax, cl", op_command);
+	else
+		emit("%s eax, ecx", op_command);
 }
 
-void perform_assign_div(expr_t *rhs)
+void perform_assign_div()
 {
 	emit("xor edx, edx");
-	if (rhs->type == LVALUE)
-	{
-		printf("mov ebx, ");
-		print_lvalue(rhs);
-		printf("\n");
-	}
-	else if (rhs->type == CONSTANT)
-	{
-		printf("mov ebx, ");
-		print_constant(&rhs->constant, 1);
-		printf("\n");
-	}
-	printf("idiv ebx\n");
+	printf("idiv ecx\n");
 }
 
 void cmp_binary(int op)
@@ -341,7 +314,7 @@ void cmp_binary(int op)
 	emit("movzx eax, al");
 }
 
-void perform_binary(expr_t *rhs, int op)
+void perform_binary(int op)
 {
 	switch (op)
 	{
@@ -349,38 +322,38 @@ void perform_binary(expr_t *rhs, int op)
 		break;
 	case ASSIGN_OR:
 	case OR:
-		perform_assign_op(rhs, "or");
+		perform_assign_op("or");
 		break;
 	case ASSIGN_LSHIFT:
 	case LSHIFT:
-		perform_assign_op(rhs, "shl");
+		perform_assign_op("shl");
 		break;
 	case ASSIGN_RSHIFT:
 	case RSHIFT:
-		perform_assign_op(rhs, "shr");
+		perform_assign_op("shr");
 		break;
 	case ASSIGN_PLUS:
 	case PLUS:
-		perform_assign_op(rhs, "add");
+		perform_assign_op("add");
 		break;
 	case ASSIGN_MINUS:
 	case MINUS:
-		perform_assign_op(rhs, "sub");
+		perform_assign_op("sub");
 		break;
 	case ASSIGN_MUL:
 	case STAR:
-		perform_assign_op(rhs, "imul");
+		perform_assign_op("imul");
 		break;
 	case ASSIGN_DIVIDE:
 	case SLASH:
-		perform_assign_div(rhs);
+		perform_assign_div();
 		break;
 	case AMPERSAND:
-		perform_assign_op(rhs, "and");
+		perform_assign_op("and");
 		break;
 	case MOD:
 	case ASSIGN_MOD:
-		perform_assign_div(rhs);
+		perform_assign_div();
 		emit("mov eax, edx");
 		break;
 	case EQ:
@@ -389,13 +362,31 @@ void perform_binary(expr_t *rhs, int op)
 	case LE:
 	case GT:
 	case GE:
-		perform_assign_op(rhs, "cmp");
+		perform_assign_op("cmp");
 		cmp_binary(op);
 		break;
 	default:
 		yyerror("Invalid assignment operator");
 		return;
 	}
+}
+
+void	load_lhs_rhs(expr_t *lhs, expr_t *rhs)
+{
+	if (lhs->type != CONSTANT) {
+		symbol_t *l_symb = get_symbol(lhs->identifier);
+		if (rhs->type != CONSTANT) {
+			symbol_t *r_symb = get_symbol(rhs->identifier);
+			if (l_symb->type == TEMP && r_symb->type == TEMP)
+			{
+				pop_into_register("ecx");
+				pop_into_register("eax");
+				return ;
+			}
+		}
+	}
+	load_value_into_reg(lhs, "eax");
+	load_value_into_reg(rhs, "ecx");
 }
 
 void perform_assign(expr_t *lhs, int op, expr_t *rhs)
@@ -406,12 +397,14 @@ void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 		return;
 	}
 	// Load the RHS value into EAX
+	
+	
 	if (op == ASSIGN)
 		load_value_into_reg(rhs, "eax");
-	else
-		load_value_into_reg(lhs, "eax");
+	else 
+		load_lhs_rhs(lhs, rhs);
 
-	perform_binary(rhs, op);
+	perform_binary(op);
 
 	symbol_t *symbol = get_symbol(lhs->identifier);
 	if (symbol->type == PTR)
@@ -427,11 +420,10 @@ void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 
 void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
 {
+	load_lhs_rhs(lhs, rhs);
+	perform_binary(op);
 	result->type = RVALUE;
-	result->identifier = add_temp_symbol(TEMP);
-	load_value_into_reg(lhs, "eax");
-	perform_binary(rhs, op);
-	register_to_lvalue(result, "eax");
+	result->identifier = add_temp_symbol(TEMP, "eax");
 	printf("\n");
 	/* free expr */
 	free_expr(lhs);
@@ -458,10 +450,9 @@ void unary(expr_t *expr, char *op)
 
 void return_post_assign(expr_t *parent, expr_t *lhs)
 {
-	parent->type = RVALUE;
-	parent->identifier = add_temp_symbol(TEMP);
 	load_value_into_reg(lhs, "eax");
-	register_to_lvalue(parent, "eax");
+	parent->type = RVALUE;
+	parent->identifier = add_temp_symbol(TEMP, "eax");
 	free_expr(lhs);
 }
 

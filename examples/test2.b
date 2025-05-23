@@ -1,10 +1,19 @@
-a[5] 1, 2, 3, 4, 5;
-b 1;
 main() {
-	extrn a, b;
+	auto a;
+	a = 1;
 
-	printf("%d*n", a[b]);
-	printf("%d*n", b[a]);
+	auto b;
+	b = &a;
 
+	printf("%d\n", *b);
 
+	while (a++ < 10) {
+		auto d;
+		d = a;
+		printf("%d\n", d);
+	}
+	/*while (1) {
+		auto c;
+		d;
+	}*/
 }
