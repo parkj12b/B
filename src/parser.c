@@ -19,6 +19,8 @@
 #include "../B.tab.h"
 #include "parser.h"
 
+extern FILE *tmp;
+
 void init_assembly(void)
 {
 	emit("section .text");
@@ -30,7 +32,7 @@ void exit_label(void)
 	emit("exit:");
 	emit("leave");
 	emit("ret");
-	printf("\n");
+	oprintf("\n");
 }
 
 void eprintf(const char *fmt, ...)
@@ -38,6 +40,14 @@ void eprintf(const char *fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
+	va_end(args);
+}
+
+void oprintf(const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(tmp, fmt, args);
 	va_end(args);
 }
 
@@ -49,7 +59,7 @@ void emit_extern(void)
 			continue;
 		if ((size_t)function_table->entries[i].value == REFERENCED)
 		{
-			printf("extern %s\n", function_table->entries[i].key);
+			oprintf("extern %s\n", function_table->entries[i].key);
 		}
 	}
 	htable_t *gtable = global_table->table;
@@ -60,7 +70,7 @@ void emit_extern(void)
 		symbol_t *symbol = gtable->entries[i].value;
 		if (symbol->type == EXTRN)
 		{
-			printf("extern %s\n", gtable->entries[i].key);
+			oprintf("extern %s\n", gtable->entries[i].key);
 		}
 	}
 }

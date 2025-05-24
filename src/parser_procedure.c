@@ -81,7 +81,7 @@ void add_auto_symb(list_t *var_decl_list)
 		cur = cur->next;
 		free(prev);
 	}
-	printf("\n");
+	oprintf("\n");
 }
 
 void add_extrn_symbol(list_t *ident_list)
@@ -108,11 +108,11 @@ void print_lvalue(expr_t *expr)
 	symbol_t *symbol = get_symbol(expr->identifier);
 	if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP)
 	{
-		printf("dword [ebp %+zd]", symbol->location.offset);
+		oprintf("dword [ebp %+zd]", symbol->location.offset);
 	}
 	else
 	{
-		printf("dword [%s]", expr->identifier);
+		oprintf("dword [%s]", expr->identifier);
 	}
 }
 
@@ -127,9 +127,9 @@ void function_call(list_t *expr_list)
 		if (expr->type == CONSTANT)
 		{
 			const_t *constant = &expr->constant;
-			printf("push ");
+			oprintf("push ");
 			if (constant->type != CONST_STRING)
-				printf("dword ");
+				oprintf("dword ");
 			print_constant(&expr->constant, 1);
 			
 			/* free */
@@ -149,9 +149,9 @@ void function_call(list_t *expr_list)
 		}
 		else
 		{
-			printf("push ");
+			oprintf("push ");
 			print_lvalue(expr);
-			printf("\n");
+			oprintf("\n");
 		}
 		free_expr(expr);
 		prev = cur;
@@ -166,21 +166,23 @@ void load_value_into_reg(expr_t *expr, char *reg)
 	if (expr->type == LVALUE || expr->type == RVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL || symbol->type == AUTO)
+		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP)
 		{
 			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
 		}
-		else if(symbol->type == TEMP || symbol->type == PTR) {
+		else if(symbol->type == TEMP) {
 			pop_into_register(reg);
 		}
 		else
 		{
 			emit("mov %s, dword [%s]", reg, expr->identifier);
 		}
+		if (symbol->type == TEMP)
+			emit("mov %s, [%s]", reg, reg);
 	}
 	else if (expr->type == CONSTANT)
 	{
-		printf("mov %s, ", reg);
+		oprintf("mov %s, ", reg);
 		print_constant(&(expr->constant), 1);
 	}
 	else if (expr->type == IVAL_IDENTIFIER)
@@ -215,9 +217,9 @@ void load_address_reg(expr_t *expr, char *reg)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
 		if (symbol->type == LOCAL)
-			printf("lea %s, [ebp - %zd]\n", reg, symbol->location.offset);
+			oprintf("lea %s, [ebp - %zd]\n", reg, symbol->location.offset);
 		else
-			printf("lea %s, %s\n", reg, expr->identifier);
+			oprintf("lea %s, %s\n", reg, expr->identifier);
 	}
 }
 
@@ -280,7 +282,7 @@ void perform_assign_op(char *op_command)
 void perform_assign_div()
 {
 	emit("xor edx, edx");
-	printf("idiv ecx\n");
+	oprintf("idiv ecx\n");
 }
 
 void cmp_binary(int op)
@@ -413,7 +415,7 @@ void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 	{
 		register_to_lvalue(lhs, "eax");
 	}
-	printf("\n");
+	oprintf("\n");
 }
 
 void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
@@ -422,7 +424,7 @@ void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
 	perform_binary(op);
 	result->type = RVALUE;
 	result->identifier = add_temp_symbol(TEMP, "eax");
-	printf("\n");
+	oprintf("\n");
 	/* free expr */
 	free_expr(lhs);
 	free_expr(rhs);
@@ -465,11 +467,11 @@ static void emit_global_uninit(void)
 		if (table->entries[i].status != ACTIVE)
 			continue;
 		symbol_t *symbol = table->entries[i].value;
-		printf("%s resd %zu\n", table->entries[i].key, symbol->size);
+		oprintf("%s resd %zu\n", table->entries[i].key, symbol->size);
 		if (symbol->value.data != NULL)
 			free(symbol->value.data);
 	}
-	printf("\n");
+	oprintf("\n");
 }
 
 static void emit_global_init(void)
@@ -485,7 +487,7 @@ static void emit_global_init(void)
 		symbol_t *symbol = table->entries[i].value;
 		list_t *list = symbol->value.data;
 		
-		printf("%s dd ", table->entries[i].key);
+		oprintf("%s dd ", table->entries[i].key);
 		node_t *cur = list->head;
 		node_t *prev = NULL;
 		while (cur && list->size--)
@@ -495,22 +497,22 @@ static void emit_global_init(void)
 			if (ival->type == IVAL_CONST)
 				print_constant(&(ival->value.constant), 0);
 			else
-				printf("%s", ival->value.identifier);
+				oprintf("%s", ival->value.identifier);
 			if (list->size != 0)
-				printf(", ");
+				oprintf(", ");
 			prev = cur;
 			cur = cur->next;
 			free(ival);
 			free(prev);
 		}
 		if (symbol->size > 0) {
-			printf("\ndd %zd dup 0\n", symbol->size);
+			oprintf("\ndd %zd dup 0\n", symbol->size);
 		}
 		else
-			printf("\n");
+			oprintf("\n");
 		free(symbol->value.data);
 	}
-	printf("\n");
+	oprintf("\n");
 
 }
 

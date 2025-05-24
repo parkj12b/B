@@ -188,8 +188,14 @@ definition:
         emit("push ebp");
         emit("mov ebp, esp\n");
 
+        /* jump reserve */
+
         emit("jmp .%s.init", $1);
         emit(".start:");
+
+        /* backpatching */
+
+        //emit("sub esp, 00000000");
 
         enter_scope(current_table);
         assert(current_table != global_table);
@@ -199,6 +205,9 @@ definition:
         print_symbol_table(current_table);
     } RPAREN statement {
         emit("jmp exit\n");
+
+        /* jump reserve */
+
         emit(".%s.init:", $1);
         emit("sub esp, %d", -offset_stack[current_depth]);
         emit("jmp .start\n");
@@ -698,9 +707,8 @@ expr:
         vector_access(&$1, &$3);
         emit("imul ebx, 4");
         emit("add ebx, eax");
-        emit("mov ebx, [ebx]");
-        $$.identifier = add_temp_symbol(TEMP, "ebx");
-        $$.type = LVALUE;
+        $$.identifier = add_temp_symbol(PTR, "ebx");
+        $$.type = TEMP;
         free_expr(&$1);
         free_expr(&$3);
     }
@@ -783,9 +791,18 @@ void yyerror(const char *msg) {
     exit(1);
 }
 
+FILE *tmp;
+
 int main(int argc, char **argv) {
     const char *input_file = NULL;
     const char *output_file = NULL;
+
+    tmp = tmpfile();
+
+    if (!tmp) {
+        perror("tmpfile");
+        return EXIT_FAILURE;
+    }
 
     // debugging flag
     /* yydebug = 1; */
@@ -838,6 +855,14 @@ int main(int argc, char **argv) {
     emit_global_var();
 
     st_print_table();
+
+    // write to stdout
+    rewind(tmp);  // reset to beginning
+    char buffer[64];
+    while (fgets(buffer, sizeof(buffer), tmp)) {
+        fputs(buffer, stdout);
+    }
+
     // Clean up
     free_symbol_table(global_table);
     ht_destroy_table(string_table);

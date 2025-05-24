@@ -2,5 +2,5 @@
 
 int main()
 {
-	printf("%d\n", (unsigned)-1 >> 10);
+	oprintf("%d\n", (unsigned)-1 >> 10);
 }

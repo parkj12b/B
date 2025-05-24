@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "parser.h"
 #include "hash_table.h"
 
 extern htable_t *string_table;
@@ -35,13 +36,13 @@ const char *st_get_label(const char *str)
 
 void st_print_table(void)
 {
-	printf("section .rodata\n");
+	oprintf("section .rodata\n");
 	for (int i = 0; i < string_table->capacity; i++)
 	{
 		if (string_table->entries[i].status == ACTIVE)
 		{
-			printf("%s db ", (char *)(string_table->entries[i].value));
-			printf("%s\n", (char *)(string_table->entries[i].key));
+			oprintf("%s db ", (char *)(string_table->entries[i].value));
+			oprintf("%s\n", (char *)(string_table->entries[i].key));
 		}
 	}
 }

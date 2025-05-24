@@ -154,7 +154,7 @@ void ht_delete(htable_t *table, const char *key)
 			table->count--;
 			if (table->count <= table->capacity * MIN_LOAD_FACTOR)
 			{
-				printf("Shrinking table from %d to %d. current count %d\n", table->capacity, table->capacity / 2, table->count);
+				oprintf("Shrinking table from %d to %d. current count %d\n", table->capacity, table->capacity / 2, table->count);
 				ht_shrink_table(table);
 			}
 			return;

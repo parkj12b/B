@@ -12,15 +12,16 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "parser.h"
 
-extern FILE	*out;
+extern FILE	*tmp;
 
 void emit(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(out, fmt, args);
-	fprintf(out, "\n");
+	vfprintf(tmp, fmt, args);
+	fprintf(tmp, "\n");
 	va_end(args);
 }
 

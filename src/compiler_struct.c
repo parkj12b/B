@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "parser.h"
 #include "compiler_struct.h"
 #include "xmalloc.h"
 
@@ -63,7 +64,7 @@ void	print_constant(const_t *constant, int newline)
 {
 	if (constant == NULL)
 	{
-		printf("NULL\n");
+		oprintf("NULL\n");
 		return;
 	}
 	switch (constant->type)
@@ -73,21 +74,21 @@ void	print_constant(const_t *constant, int newline)
 	// case CONST_FLOAT:
 	// 	printf("FLOAT: %zu\n", constant->value);
 	// 	break;
-		printf("%zd", constant->value);
+		oprintf("%zd", constant->value);
 		break;
 	case CONST_STRING:
-		printf("%s", (char *)constant->value);
+		oprintf("%s", (char *)constant->value);
 		break;
 	// case CONST_BOOL:
 	// 	printf("BOOL: %zu\n", constant->value);
 	// 	break;
 	default:
-		printf("UNKNOWN TYPE");
+		oprintf("UNKNOWN TYPE");
 		break;
 	}
 	if (newline)
 	{
-		printf("\n");
+		oprintf("\n");
 	}
 }
 
@@ -95,7 +96,7 @@ void temp_expr(expr_t *expr)
 {
 	if (expr->type == LVALUE)
 	{
-		printf("dword [ebp %+zd]", expr->value);
+		oprintf("dword [ebp %+zd]", expr->value);
 	}
 	else if (expr->type == CONSTANT)
 	{
@@ -103,6 +104,6 @@ void temp_expr(expr_t *expr)
 	}
 	else
 	{
-		printf("%zu\n", expr->value);
+		oprintf("%zu\n", expr->value);
 	}
 }
