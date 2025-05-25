@@ -12,7 +12,7 @@ mov ecx, 2
 add eax, ecx
 push eax
 
-push dword [ebp +000000]
+push eax
 push s_0
 call printf
 
@@ -23,7 +23,6 @@ pop eax
 jmp exit
 
 .main.init:
-sub esp, 0
 jmp .start
 
 exit:
@@ -32,4 +31,4 @@ ret
 
 .extern printf
 .section .rodata
-s_0: .byte "%d", 10, 0
+s_0: .string "%d\n"
