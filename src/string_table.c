@@ -36,12 +36,12 @@ const char *st_get_label(const char *str)
 
 void st_print_table(void)
 {
-	oprintf("section .rodata\n");
+	oprintf(".section .rodata\n");
 	for (int i = 0; i < string_table->capacity; i++)
 	{
 		if (string_table->entries[i].status == ACTIVE)
 		{
-			oprintf("%s db ", (char *)(string_table->entries[i].value));
+			oprintf("%s: .byte ", (char *)(string_table->entries[i].value));
 			oprintf("%s\n", (char *)(string_table->entries[i].key));
 		}
 	}

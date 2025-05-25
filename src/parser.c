@@ -23,8 +23,9 @@ extern FILE *tmp;
 
 void init_assembly(void)
 {
-	emit("section .text");
-	emit("global main");
+	emit(".intel_syntax noprefix");
+	emit(".text");
+	emit(".globl main");
 }
 
 void exit_label(void)
@@ -59,7 +60,7 @@ void emit_extern(void)
 			continue;
 		if ((size_t)function_table->entries[i].value == REFERENCED)
 		{
-			oprintf("extern %s\n", function_table->entries[i].key);
+			oprintf(".extern %s\n", function_table->entries[i].key);
 		}
 	}
 	htable_t *gtable = global_table->table;
@@ -70,7 +71,7 @@ void emit_extern(void)
 		symbol_t *symbol = gtable->entries[i].value;
 		if (symbol->type == EXTRN)
 		{
-			oprintf("extern %s\n", gtable->entries[i].key);
+			oprintf(".extern %s\n", gtable->entries[i].key);
 		}
 	}
 }
@@ -93,4 +94,5 @@ void increase_label()
 void pop_into_register(char *reg)
 {
 	emit("pop %s", reg);
+	temp_offset_stack[current_depth] += 4;
 }

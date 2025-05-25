@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parser_procedure.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 23:49:36 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/26 00:44:40 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,9 +106,12 @@ void add_extrn_symbol(list_t *ident_list)
 void print_lvalue(expr_t *expr)
 {
 	symbol_t *symbol = get_symbol(expr->identifier);
-	if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP)
+	if (symbol->type == LOCAL || symbol->type == AUTO)
 	{
 		oprintf("dword [ebp %+zd]", symbol->location.offset);
+	} else if (symbol->type == TEMP) {
+		add_patch_position(expr->identifier, ftell(tmp));
+		oprintf("dword [ebp @000000]");
 	}
 	else
 	{
@@ -166,18 +169,20 @@ void load_value_into_reg(expr_t *expr, char *reg)
 	if (expr->type == LVALUE || expr->type == RVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP)
+		if (symbol->type == LOCAL || symbol->type == AUTO)
 		{
 			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
 		}
 		else if(symbol->type == TEMP) {
+			add_patch_position(expr->identifier, ftell(tmp));
+			emit("mov %s, [ebp @000000]");
 			pop_into_register(reg);
 		}
 		else
 		{
 			emit("mov %s, dword [%s]", reg, expr->identifier);
 		}
-		if (symbol->type == TEMP)
+		if (symbol->type == PTR)
 			emit("mov %s, [%s]", reg, reg);
 	}
 	else if (expr->type == CONSTANT)
@@ -204,9 +209,12 @@ void load_address_reg(expr_t *expr, char *reg)
 	if (expr->type == LVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == TEMP || symbol->type == PTR)
+		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == PTR)
 		{
 			emit("lea %s, [ebp %+zd]", reg, symbol->location.offset);
+		} else if (symbol->type == TEMP) {
+			add_patch_position(expr->identifier, ftell(tmp));
+			emit("lea %s, [ebp @000000]", reg);
 		}
 		else
 		{
@@ -227,9 +235,12 @@ void register_to_lvalue(expr_t *expr, char *reg)
 {
 	symbol_t *symbol_l = get_symbol(expr->identifier);
 
-	if (symbol_l->type == LOCAL || symbol_l->type == AUTO || symbol_l->type == TEMP || symbol_l->type == PTR)
+	if (symbol_l->type == LOCAL || symbol_l->type == AUTO || symbol_l->type == PTR)
 	{
 		emit("mov [ebp %+zd], %s", symbol_l->location.offset, reg);
+	} else if (symbol_l->type == TEMP) {
+		add_patch_position(expr->identifier, ftell(tmp));
+		emit("mov [ebp @000000], %s", reg);
 	}
 	else
 	{
@@ -458,7 +469,7 @@ void return_post_assign(expr_t *parent, expr_t *lhs)
 
 static void emit_global_uninit(void)
 {
-	emit("section .bss");
+	emit(".bss");
 
 	htable_t *table = global_uninit->table;
 
@@ -476,7 +487,7 @@ static void emit_global_uninit(void)
 
 static void emit_global_init(void)
 {
-	emit("section .data");
+	emit(".data");
 
 	htable_t *table = global_init->table;
 

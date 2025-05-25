@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   hash_table.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:48:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 19:25:07 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/25 23:24:22 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -154,7 +154,7 @@ void ht_delete(htable_t *table, const char *key)
 			table->count--;
 			if (table->count <= table->capacity * MIN_LOAD_FACTOR)
 			{
-				oprintf("Shrinking table from %d to %d. current count %d\n", table->capacity, table->capacity / 2, table->count);
+				eprintf("Shrinking table from %d to %d. current count %d\n", table->capacity, table->capacity / 2, table->count);
 				ht_shrink_table(table);
 			}
 			return;

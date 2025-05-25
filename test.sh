@@ -1,4 +1,4 @@
-./a.out examples/test2.b 2>/dev/null > test.asm
-nasm -f elf32 test.asm -o test.o
-gcc -g -fsanitize=address -mtune=i386 -m32 -pie test.o -o test
+./B examples/test2.b 2>/dev/null > test.asm
+gcc -m32 -c test.asm -o test.o
+gcc -m32 test.o -o test
 ./test

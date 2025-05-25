@@ -1,5 +1,6 @@
-section .text
-global main
+.intel_syntax noprefix
+.text
+.globl main
 main:
 push ebp
 mov ebp, esp
@@ -11,7 +12,7 @@ mov ecx, 2
 add eax, ecx
 push eax
 
-push dword [ebp +0]
+push dword [ebp +000000]
 push s_0
 call printf
 
@@ -29,6 +30,6 @@ exit:
 leave
 ret
 
-extern printf
-section .rodata
-s_0 db "%d", 10, 0
+.extern printf
+.section .rodata
+s_0: .byte "%d", 10, 0

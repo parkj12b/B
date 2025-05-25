@@ -1,6 +1,6 @@
 
 
-NAME=a.out
+NAME=B
 
 LIBFT = libft/libft.a
 

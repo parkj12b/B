@@ -45,7 +45,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 45 "src/B.y"
+#line 48 "src/B.y"
 
     #include "compiler_struct.h"
 
@@ -124,7 +124,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 51 "src/B.y"
+#line 54 "src/B.y"
 
     /* primitive constants */
     size_t          ival;

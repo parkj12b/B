@@ -13,6 +13,7 @@
 #include "parser_procedure.h"
 #include "compiler_struct.h"
 #include "yyfree.h"
+#include <assert.h>
 
 int yylex(void);
 extern int  yylineno;
@@ -30,15 +31,17 @@ symbol_table_t  *global_table;
 symbol_table_t  *current_table;
 symbol_table_t  *global_init;
 symbol_table_t  *global_uninit;
+htable_t        *temp_patch_table;
 htable_t        *function_table;
 htable_t        *string_table;
-char            *current_function;
+
 size_t          label_counter = 0;
 size_t          label_index = 0;
 size_t          label_stack[128];
 
 /* offset stack */
 int offset_stack[128];
+int temp_offset_stack[128];
 int current_depth = 0;
 %}
 
@@ -211,7 +214,7 @@ definition:
         emit(".%s.init:", $1);
         emit("sub esp, %d", -offset_stack[current_depth]);
         emit("jmp .start\n");
-        exit_scope();
+        exit_scope(offset_stack[current_depth]);
         assert(current_table == global_table);
         free($1);
         
@@ -788,6 +791,7 @@ binary:
 // yyerror function
 void yyerror(const char *msg) {
     fprintf(stderr, "Error at line %d: %s\n", yylineno, msg);
+    assert(0 && "forced");
     exit(1);
 }
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   symbol_table.h                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 16:23:47 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/25 23:01:19 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,14 +71,17 @@ extern symbol_table_t *global_table;
 extern symbol_table_t *current_table;
 extern symbol_table_t *global_init;
 extern symbol_table_t *global_uninit;
+
 extern int offset_stack[];
+extern int temp_offset_stack[];
 extern int current_depth;
+extern htable_t *temp_patch_table;
 extern htable_t *function_table;
 
 void init_symbol_table(void);
 void enter_scope(symbol_table_t *table);
 void add_symbol(char *name, void *value);
-void exit_scope(void);
+void exit_scope(int local_var_size);
 
 /**
  * @details if the symbol is not found, it returns NULL.
