@@ -635,7 +635,7 @@ expr:
     }
     | binary {
         $$ = $1;
-        $$.type = EXPR_VAL;
+        $$.type == EXPR_VAL;
     }
     | INC expr %prec INC {
         if ($2.val_kind != EXPR_LVALUE) {

@@ -13,8 +13,11 @@ main() {
 	auto i, c, col, a;
 
 	i = col = 0;
-	while(i < n)
+	while(i < n) {
 		v[i++] = 1;
+		printf("%d\n", i);
+	}
+	printf("here\n");
 	while(col < 2 * n) {
 		a = n + 1;
 		c = i = 0;

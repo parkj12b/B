@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/06 01:12:29 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/26 22:41:35 by root             ###   ########.fr       */
+/*   Updated: 2025/05/27 01:37:26 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,6 +79,7 @@ void	print_constant(const_t *constant, int newline)
 	// 	break;
 	default:
 		oprintf("UNKNOWN TYPE");
+		yyerror("ohno:");
 		break;
 	}
 	if (newline)

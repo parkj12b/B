@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/26 22:20:08 by root             ###   ########.fr       */
+/*   Updated: 2025/05/27 01:32:44 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,8 +81,9 @@ void free_expr(expr_t *expr)
 	if (expr->type != EXPR_CONST)
 	{
 		free(expr->identifier);
-		return ;
 	}
+	if (expr->storage_kind == EXPR_TEMP)
+		offset_stack[current_depth] += 4;
 }
 
 void increase_label()
