@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/26 21:42:16 by root             ###   ########.fr       */
+/*   Updated: 2025/05/27 02:10:57 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,6 @@ void enter_scope(symbol_table_t *table)
 	current_depth++;
 	offset_stack[current_depth] = 0;
 	current_table = new_scope;
-	max_stack_depth = 0;
 }
 
 void exit_scope()
@@ -65,7 +64,6 @@ void exit_scope()
 	// print_table(old_table->table);
 	free_symbol_table(old_table);
 	current_depth--;
-	max_stack_depth = offset_stack[current_depth];
 }
 
 void add_symbol_table(symbol_table_t *table, const char *name, void *value)

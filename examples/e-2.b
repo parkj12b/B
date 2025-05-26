@@ -17,13 +17,14 @@ main() {
 		v[i++] = 1;
 		printf("%d\n", i);
 	}
-	printf("here\n");
 	while(col < 2 * n) {
+		printf("%d\n", col);
 		a = n + 1;
 		c = i = 0;
 		while (i < n) {
 			c =+ v[i] * 10;
 			v[i++] = c % a;
+			printf("i: %d\n", i);
 			c =/ a--;
 		}
 

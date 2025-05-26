@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/27 01:18:08 by root             ###   ########.fr       */
+/*   Updated: 2025/05/27 02:38:43 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -186,6 +186,8 @@ void load_value_into_reg(expr_t *expr, char *reg)
 		oprintf("mov %s, ", reg);
 		print_constant(&(expr->constant), 1);
 	}
+	if (expr->storage_kind == EXPR_TEMP)
+		pop_register();
 }
 
 void load_address_reg(expr_t *expr, char *reg)
@@ -216,6 +218,8 @@ void load_address_reg(expr_t *expr, char *reg)
 		else
 			oprintf("lea %s, %s\n", reg, expr->identifier);
 	}
+	if (expr->storage_kind == EXPR_TEMP)
+		pop_register();
 }
 
 void load_value_reg_to_lvalue(expr_t *expr, char *reg){
@@ -416,6 +420,7 @@ void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
 	load_lhs_rhs(lhs, rhs);
 	perform_binary(op);
 	result->val_kind = EXPR_RVALUE;
+	result->type = EXPR_VAL;
 	add_temp_symbol(result);
 	register_to_lvalue(result, "eax");
 	oprintf("\n");
@@ -463,7 +468,7 @@ static void emit_global_uninit(void)
 		if (table->entries[i].status != ACTIVE)
 			continue;
 		symbol_t *symbol = table->entries[i].value;
-		oprintf("%s: .zero %zu\n", table->entries[i].key, symbol->size);
+		oprintf("%s: .zero %zu\n", table->entries[i].key, symbol->size * 4);
 		if (symbol->value.data != NULL)
 			free(symbol->value.data);
 	}
@@ -571,8 +576,8 @@ char *add_temp_symbol(expr_t *expr)
 	symb->size = 1;
 	expr->storage_kind = EXPR_TEMP;
 	offset_stack[current_depth] -= 4; // TODO: define word size for x86
-	if (offset_stack[current_depth] < max_stack_depth)
-		max_stack_depth = offset_stack[current_depth];
+	if (offset_stack[current_depth] < max_stack[current_depth])
+		max_stack[current_depth] = offset_stack[current_depth];
 	symb->location.offset = offset_stack[current_depth];
 	snprintf(name, sizeof(name), "t_%d", temp_count++);
 	add_symbol(name, symb);

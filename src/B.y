@@ -40,8 +40,8 @@ size_t          label_stack[128];
 
 /* offset stack */
 int offset_stack[128];
+int max_stack[128];
 int current_depth = 0;
-int max_stack_depth;
 %}
 
 %code requires {
@@ -211,7 +211,7 @@ definition:
 
         // emit(".%s.init:", $1);
         emit("1:");
-        emit("sub esp, %d", -max_stack_depth);
+        emit("sub esp, %d", -max_stack[current_depth]);
         emit("jmp 2b\n");
         exit_scope();
         assert(current_table == global_table);
@@ -410,8 +410,6 @@ simple_statement:
     | opt_expr SEMICOLON {
         if ($1.kind != OPT_NONE) {
             expr_t *expr = &$1.value.expr;
-            if (expr->storage_kind == EXPR_TEMP)
-                pop_into_register("eax");
             free_expr(&$1.value.expr);
         }
     }
