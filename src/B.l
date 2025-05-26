@@ -103,7 +103,8 @@ char *str_to_assembly_str(const char *str);
     return CHARCONST; }
 
 \"[^\"]*\" {
-    yylval.sval = str_to_assembly_str(yytext); // String: "string"
+    // yylval.sval = str_to_assembly_str(yytext); // String: "string"
+    yylval.sval = strdup(yytext);
     return STRING;
 }
 
@@ -207,7 +208,7 @@ int escape_char_to_asm(const char c, var_str_t *var_str) {
     return 1;
 }
 
-char *str_to_assembly_str(const char *str) {
+/* char *str_to_assembly_str(const char *str) {
     const char *p = str + 1; // Skip the opening "
     var_str_t *var_str = create_vector(32);
     int escape_flag = 0;
@@ -242,4 +243,4 @@ char *str_to_assembly_str(const char *str) {
     free(var_str->str); // Free the original string
     free(var_str); // Free the vector structure
     return return_str; // Return the string
-}
+} */

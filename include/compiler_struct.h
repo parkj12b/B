@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   compiler_struct.h                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/04 23:26:15 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/18 22:48:34 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/26 22:49:55 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,16 +58,23 @@ typedef struct statement_s
 
 typedef enum
 {
-	LVALUE,
-	RVALUE,
-	CONSTANT,
-	TEMP,
-	PTR,
+	EXPR_VAL,
+    EXPR_CONST,
+	EXPR_DEREF,
 } expr_type_t;
+
+typedef enum { EXPR_LVALUE, EXPR_RVALUE } expr_value_kind_t;
+
+typedef enum { 
+	EXPR_VAR,       // variable (scalar or vector base)
+    EXPR_TEMP,      // temporary value (compiler-generated)
+} expr_storage_kind_t;
 
 /* expr */
 typedef struct expr_s
 {
+	expr_storage_kind_t storage_kind;
+	expr_value_kind_t val_kind;
 	expr_type_t type;
 	union {
 		const_t constant;

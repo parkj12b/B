@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parser.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 23:12:58 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/26 22:20:08 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,7 +78,7 @@ void emit_extern(void)
 
 void free_expr(expr_t *expr)
 {
-	if (expr->type != CONSTANT)
+	if (expr->type != EXPR_CONST)
 	{
 		free(expr->identifier);
 		return ;
@@ -93,6 +93,5 @@ void increase_label()
 
 void pop_into_register(char *reg)
 {
-	emit("pop %s", reg);
-	temp_offset_stack[current_depth] += 4;
+	offset_stack[current_depth] += 4;
 }

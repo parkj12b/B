@@ -31,7 +31,6 @@ symbol_table_t  *global_table;
 symbol_table_t  *current_table;
 symbol_table_t  *global_init;
 symbol_table_t  *global_uninit;
-htable_t        *temp_patch_table;
 htable_t        *function_table;
 htable_t        *string_table;
 
@@ -41,8 +40,8 @@ size_t          label_stack[128];
 
 /* offset stack */
 int offset_stack[128];
-int temp_offset_stack[128];
 int current_depth = 0;
+int max_stack_depth;
 %}
 
 %code requires {
@@ -126,15 +125,16 @@ definition:
         if ($2.kind == OPT_NONE) {
             symbol->size = 1;
             symbol->value.data = NULL;
+            symbol->type = SYMBOL_GLOBAL;
             memcpy(symbol_cpy, symbol, sizeof(symbol_t));
             add_symbol_table(global_uninit, $1, symbol);
             add_symbol($1, symbol_cpy);
         } else {
             list_t *list = (list_t *)xmalloc(sizeof(list_t));
             memcpy(list, &$2.value.list, sizeof(list_t));
-
             symbol->value.data = list;
             symbol->size = list->size;
+            symbol->type = SYMBOL_GLOBAL;
             memcpy(symbol_cpy, symbol, sizeof(symbol_t));
             add_symbol_table(global_init, $1, symbol);
             add_symbol($1, symbol_cpy);
@@ -146,6 +146,7 @@ definition:
         symbol_t *symbol = (symbol_t *)xmalloc(sizeof(symbol_t));
         symbol_t *symbol_cpy = (symbol_t *)xmalloc(sizeof(symbol_t));
         
+        symbol->type = SYMBOL_GLOBAL;
         if ($3.kind != OPT_NONE) {
             const_t *constant = &($3.value.constant);
             if (constant->type != CONST_INT) {
@@ -193,12 +194,9 @@ definition:
 
         /* jump reserve */
 
-        emit("jmp .%s.init", $1);
-        emit(".start:");
-
-        /* backpatching */
-
-        //emit("sub esp, 00000000");
+        // emit("jmp .%s.init", $1);
+        emit("jmp 1f");
+        emit("2:");
 
         enter_scope(current_table);
         assert(current_table != global_table);
@@ -211,10 +209,11 @@ definition:
 
         /* jump reserve */
 
-        emit(".%s.init:", $1);
-        emit("sub esp, %d", -offset_stack[current_depth]);
-        emit("jmp .start\n");
-        exit_scope(offset_stack[current_depth]);
+        // emit(".%s.init:", $1);
+        emit("1:");
+        emit("sub esp, %d", -max_stack_depth);
+        emit("jmp 2b\n");
+        exit_scope();
         assert(current_table == global_table);
         free($1);
         
@@ -411,14 +410,9 @@ simple_statement:
     | opt_expr SEMICOLON {
         if ($1.kind != OPT_NONE) {
             expr_t *expr = &$1.value.expr;
-            if (expr->type != CONSTANT)
-            {
-                symbol_t *symb = get_symbol(expr->identifier);
-                if (symb->type == TEMP)
-                    pop_into_register("eax");
-            }
+            if (expr->storage_kind == EXPR_TEMP)
+                pop_into_register("eax");
             free_expr(&$1.value.expr);
-
         }
     }
     ;
@@ -518,6 +512,7 @@ assign:
         perform_assign(&$1, ASSIGN, &$3);
         free_expr(&$3);
         return_post_assign(&$$, &$1);
+
     }
     | expr ASSIGN_OR expr %prec ASSIGN_OR {
         perform_assign(&$1, ASSIGN_OR, &$3);
@@ -586,7 +581,6 @@ expr_list:
         expr_t *expr = (expr_t *)xmalloc(sizeof(expr_t));
         memcpy(expr, &$3, sizeof(expr_t));
         node_t *node = create_node(expr);
-
         add_node(&($1), node);
         $$ = $1;
     }
@@ -594,11 +588,13 @@ expr_list:
 
 expr:
     constant {
-        $$.type = CONSTANT;
+        $$.type = EXPR_CONST;
+        $$.val_kind = EXPR_RVALUE;
         $$.constant = $1;
     }
     | IDENTIFIER {
-        $$.type = LVALUE;
+        $$.val_kind = EXPR_LVALUE;
+        $$.type = EXPR_VAL;
         $$.identifier = $1;
     }
     | LPAREN expr RPAREN %prec LPAREN {
@@ -606,7 +602,7 @@ expr:
     }
     /* function call */
     | expr LPAREN opt_expr_list RPAREN {
-        if ($1.type != LVALUE) {
+        if ($1.val_kind != EXPR_LVALUE) {
             yyerror("LHS of function call must be a Lvalue");
         }
         /* check if function exist */
@@ -618,18 +614,20 @@ expr:
         if ($3.kind != OPT_NONE) {
             function_call(&($3.value.list));
         }
-        if ($1.type == LVALUE) {
+        if ($1.val_kind == EXPR_LVALUE) {
             emit("call %s\n", $1.identifier);
         } else {
-            emit("call %zu\n", $1.value);
+            emit("call %zu\n", $1.value); //TODO: fix it so function ptr can work
         }
         /* clean up passed arguments */
         size_t arg_resb = $3.value.list.size * 4;
         if (arg_resb > 0) {
             emit("add esp, %zu\n", arg_resb);
         }
-        $$.type = RVALUE;
-        $$.identifier = add_temp_symbol(TEMP, "eax");
+        $$.val_kind = EXPR_RVALUE;
+        $$.type = EXPR_VAL;
+        add_temp_symbol(&$$);
+        register_to_lvalue(&$$, "eax");
         free_expr(&$1);
     }
     | assign {
@@ -637,42 +635,48 @@ expr:
     }
     | binary {
         $$ = $1;
+        $$.type = EXPR_VAL;
     }
     | INC expr %prec INC {
-        if ($2.type != LVALUE) {
+        if ($2.val_kind != EXPR_LVALUE) {
             yyerror("LHS of increment must be a Lvalue");
         }
         unary(&$2, "inc");
         $$ = $2;
+        $$.type = EXPR_VAL;
+        register_to_lvalue(&$$, "eax");
     }
     | DEC expr %prec DEC {
-        if ($2.type != LVALUE) {
+        if ($2.val_kind != EXPR_LVALUE) {
             yyerror("LHS of decrement must be a Lvalue");
         }
         unary(&$2, "dec");
         $$ = $2;
+        $$.type = EXPR_VAL;
+        register_to_lvalue(&$$, "eax");
     }
     | expr INC {
-        if ($1.type != LVALUE) {
+        if ($1.val_kind != EXPR_LVALUE) {
             yyerror("LHS of increment must be a Lvalue");
         }
 
         load_value_into_reg(&$1, "eax");
-        char *name = add_temp_symbol(TEMP, "eax");
-        $$.type = RVALUE;
-        $$.identifier = name;
+        add_temp_symbol(&$$);
+        $$.val_kind = EXPR_RVALUE;
+        $$.type = EXPR_VAL;
+        register_to_lvalue(&$$, "eax");
         unary(&$1, "inc");
         free_expr(&$1);
     }
     | expr DEC {
-        if ($1.type != LVALUE) {
+        if ($1.val_kind != EXPR_LVALUE) {
             yyerror("LHS of decrement must be a Lvalue");
         }
-
         load_value_into_reg(&$1, "eax");
-        char *name = add_temp_symbol(TEMP, "eax");
-        $$.type = RVALUE;
-        $$.identifier = name;
+        add_temp_symbol(&$$);
+        $$.type = EXPR_VAL;
+        $$.val_kind = EXPR_RVALUE;
+        register_to_lvalue(&$$, "eax");
         unary(&$1, "dec");
         free_expr(&$1);
     }
@@ -680,8 +684,10 @@ expr:
         $$ = $2;
         load_value_into_reg(&$2, "eax");
         emit("neg eax");
-        $$.type = RVALUE;
-        $$.identifier = add_temp_symbol(TEMP, "eax");
+        $$.type = EXPR_VAL;
+        $$.val_kind = EXPR_RVALUE;
+        add_temp_symbol(&$$);
+        register_to_lvalue(&$$, "eax");
     }
     | NOT expr %prec UNARY {
         $$ = $2;
@@ -690,51 +696,64 @@ expr:
         emit("test eax, eax");
         emit("setz al");
         emit("movzx eax, al");
-        $$.type = RVALUE;
-        $$.identifier = add_temp_symbol(TEMP, "eax");
+        $$.type = EXPR_VAL;
+        $$.val_kind = EXPR_RVALUE;
+        add_temp_symbol(&$$);
+        register_to_lvalue(&$$, "eax");
         free_expr(&$2);
     }
     | STAR expr %prec DEREF {
         load_value_into_reg(&$2, "eax");
-        $$.identifier = add_temp_symbol(PTR, "eax");
-        $$.type = LVALUE;
+        add_temp_symbol(&$$);
+        $$.type = EXPR_DEREF;
+        $$.val_kind = EXPR_LVALUE;
+        load_value_reg_to_lvalue(&$$, "eax");
         free_expr(&$2);
     }
     | AMPERSAND expr %prec ADDR_OF {
         $$ = $2;
-        $$.type = RVALUE;
+        if ($2.val_kind == EXPR_RVALUE)
+            yyerror("L-Value required for taking the address of.");
+        $$.type = EXPR_VAL;
+        $$.val_kind = EXPR_RVALUE;
         load_address_reg(&$2, "eax");
-        $$.identifier = add_temp_symbol(TEMP, "eax");
+        add_temp_symbol(&$$);
+        register_to_lvalue(&$$, "eax");
+
     }
-    | expr LBRACKET expr RBRACKET { //TODO: decide what to do with vector_access. LVALUE
+    | expr LBRACKET expr RBRACKET { //TODO: decide what to do with vector_access. EXPR_LVALUE
         vector_access(&$1, &$3);
         emit("imul ebx, 4");
         emit("add ebx, eax");
-        $$.identifier = add_temp_symbol(PTR, "ebx");
-        $$.type = TEMP;
+        add_temp_symbol(&$$);
+        $$.val_kind = EXPR_LVALUE;
+        $$.type = EXPR_DEREF;
+        $$.storage_kind = EXPR_TEMP;
+        load_value_reg_to_lvalue(&$$, "ebx");
         free_expr(&$1);
         free_expr(&$3);
     }
     | expr QUESTION {
         load_value_into_reg(&$1, "eax");
-        $<expr>$.type = RVALUE;
-        $<expr>$.identifier = add_temp_symbol(TEMP, NULL);
+        $<expr>$.val_kind = EXPR_RVALUE;
+        add_temp_symbol(&$<expr>$);
         emit("test eax, eax");
         emit("jz .LF%zu", label_counter);
         free_expr(&$1);
     } expr COLON {
         load_value_into_reg(&$4, "eax");
-        emit("push eax");
         // register_to_lvalue(&$<expr>3, "eax");
         $<expr>$ = $<expr>3;
         emit("jmp .LE%zu", label_counter);
         emit(".LF%zu:", label_counter);
     } expr %prec TERNARY {
+        $$.type = EXPR_VAL;
+        $$.storage_kind = EXPR_TEMP;
         load_value_into_reg(&$7, "eax");
-        emit("push eax");
-        // register_to_lvalue(&$<expr>6, "eax");
+        register_to_lvalue(&$<expr>6, "eax");
         $$ = $<expr>6;
         emit(".LE%zu:", label_counter);
+        $$.type = EXPR_VAL;
         label_counter++;
     }
     ;

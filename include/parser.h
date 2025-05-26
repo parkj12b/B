@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parser.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 01:19:36 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/19 15:09:00 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/26 15:04:21 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,8 +25,9 @@ void increase_label();
 void pop_into_register(char *reg);
 void oprintf(const char *fmt, ...);
 
-extern size_t label_counter;
-extern size_t label_index;
-extern size_t label_stack[];
+extern int   max_stack_depth;
+extern size_t   label_counter;
+extern size_t   label_index;
+extern size_t   label_stack[];
 
 #endif

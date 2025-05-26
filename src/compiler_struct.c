@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   compiler_struct.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/06 01:12:29 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/18 22:51:05 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/26 22:41:35 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,11 +62,6 @@ list_t *create_list(void)
 
 void	print_constant(const_t *constant, int newline)
 {
-	if (constant == NULL)
-	{
-		oprintf("NULL\n");
-		return;
-	}
 	switch (constant->type)
 	{
 	case CONST_INT:
@@ -92,18 +87,18 @@ void	print_constant(const_t *constant, int newline)
 	}
 }
 
-void temp_expr(expr_t *expr)
-{
-	if (expr->type == LVALUE)
-	{
-		oprintf("dword [ebp %+zd]", expr->value);
-	}
-	else if (expr->type == CONSTANT)
-	{
-		print_constant(&expr->constant, 1);
-	}
-	else
-	{
-		oprintf("%zu\n", expr->value);
-	}
-}
+// void temp_expr(expr_t *expr)
+// {
+// 	if (expr->type == EXPR_LVALUE)
+// 	{
+// 		oprintf("dword ptr [ebp %+zd]", expr->value);
+// 	}
+// 	else if (expr->type == EXPR_CONST)
+// 	{
+// 		print_constant(&expr->constant, 1);
+// 	}
+// 	else
+// 	{
+// 		oprintf("%zu\n", expr->value);
+// 	}
+// }

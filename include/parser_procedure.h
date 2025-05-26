@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parser_procedure.h                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:33:28 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/18 21:46:10 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/27 00:58:06 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,5 +31,7 @@ void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result);
 void return_post_assign(expr_t *parent, expr_t *lhs);
 void emit_global_var(void);
 void vector_access(expr_t *base, expr_t *offset);
+char *add_temp_symbol(expr_t *expr);
+void load_value_reg_to_lvalue(expr_t *expr, char *reg);
 
 #endif

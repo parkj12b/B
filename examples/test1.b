@@ -98,7 +98,7 @@ if (1) {
 
 	printf("-1 expected: %d\n", b);
 
-		b = 6 ;
+	b = 100;
 	while (b =- 2) {
 		printf("b = %d\n", b);
 	}
@@ -169,6 +169,7 @@ if (1) {
 	printf("expected: 2, %d\n", a[b]);
 	printf("expected: 2, %d\n", b[a]);
 	/* printf("%d\n", a[e]); */
+	printf("e[0], expected: 1, %d\n", e[0]);
 	printf("expected: 2, %d\n", a[e[0]]);
 	/*
 	printf("%d\n", b[b]);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   string_table.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: minsepar <minsepar@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/06 00:51:52 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/18 14:41:30 by minsepar         ###   ########.fr       */
+/*   Updated: 2025/05/26 17:37:02 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ void st_print_table(void)
 	{
 		if (string_table->entries[i].status == ACTIVE)
 		{
-			oprintf("%s: .byte ", (char *)(string_table->entries[i].value));
+			oprintf("%s: .string ", (char *)(string_table->entries[i].value));
 			oprintf("%s\n", (char *)(string_table->entries[i].key));
 		}
 	}

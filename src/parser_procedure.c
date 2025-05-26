@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/26 00:44:40 by root             ###   ########.fr       */
+/*   Updated: 2025/05/27 01:01:59 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ void add_argument_symb(char *name, list_t *list)
 	while (cur)
 	{
 		symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
-		symb->type = VAR;
+		symb->type = SYMBOL_LOCAL;
 		symb->size = 0;
 		symb->location.offset = 8 + arg_num * 4; // TODO: define word size for x86
 		add_symbol((char *)cur->data, symb);
@@ -57,17 +57,15 @@ void add_auto_symb(list_t *var_decl_list)
 	{
 		var_decl_t *var_decl = cur->data;
 		symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
-		symb->type = AUTO;
+		symb->type = SYMBOL_LOCAL;
 		if (var_decl->constant != NULL)
 		{
 			symb->size = var_decl->constant->value;
-			// emit("sub esp, %zd", symb->size * 4); // TODO: define word size for x86
 			free(var_decl->constant);
 		}
 		else
 		{
 			symb->size = 1;
-			// emit("push 0");
 		}
 
 		offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
@@ -92,7 +90,7 @@ void add_extrn_symbol(list_t *ident_list)
 	while (cur)
 	{
 		symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
-		symb->type = EXTRN;
+		symb->type = SYMBOL_EXTRN;
 		symb->size = 0;
 		symb->location.label = cur->data;
 		add_symbol(cur->data, symb);
@@ -106,16 +104,14 @@ void add_extrn_symbol(list_t *ident_list)
 void print_lvalue(expr_t *expr)
 {
 	symbol_t *symbol = get_symbol(expr->identifier);
-	if (symbol->type == LOCAL || symbol->type == AUTO)
+	if (symbol->type == SYMBOL_LOCAL || symbol->type == AUTO 
+		|| expr->storage_kind == EXPR_TEMP)
 	{
-		oprintf("dword [ebp %+zd]", symbol->location.offset);
-	} else if (symbol->type == TEMP) {
-		add_patch_position(expr->identifier, ftell(tmp));
-		oprintf("dword [ebp @000000]");
+		oprintf("dword ptr [ebp %+zd]", symbol->location.offset);
 	}
 	else
 	{
-		oprintf("dword [%s]", expr->identifier);
+		oprintf("dword ptr [%s]", expr->identifier);
 	}
 }
 
@@ -127,13 +123,18 @@ void function_call(list_t *expr_list)
 	while (cur)
 	{
 		expr_t *expr = (expr_t *)cur->data;
-		if (expr->type == CONSTANT)
+		if (expr->type == EXPR_CONST)
 		{
 			const_t *constant = &expr->constant;
-			oprintf("push ");
-			if (constant->type != CONST_STRING)
-				oprintf("dword ");
-			print_constant(&expr->constant, 1);
+			if (constant->type != CONST_STRING) {
+				oprintf("push dword ptr ");
+				print_constant(&expr->constant, 1);
+			} else {
+				oprintf("lea eax, [");
+				print_constant(&expr->constant, 0);
+				emit("]");
+				emit("push eax");
+			}
 			
 			/* free */
 			free_expr(expr);
@@ -144,10 +145,9 @@ void function_call(list_t *expr_list)
 			continue;
 		}
 
-		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == PTR)
+		if (expr->type == EXPR_DEREF)
 		{
-			deref_to_reg(expr, "eax");
+			load_value_into_reg(expr, "eax");
 			emit("push eax");
 		}
 		else
@@ -166,68 +166,69 @@ void function_call(list_t *expr_list)
 
 void load_value_into_reg(expr_t *expr, char *reg)
 {
-	if (expr->type == LVALUE || expr->type == RVALUE)
+	if (expr->type != EXPR_CONST)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL || symbol->type == AUTO)
+		if (symbol->type == SYMBOL_LOCAL 
+			|| expr->storage_kind == EXPR_TEMP || expr->type == EXPR_DEREF)
 		{
 			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
 		}
-		else if(symbol->type == TEMP) {
-			add_patch_position(expr->identifier, ftell(tmp));
-			emit("mov %s, [ebp @000000]");
-			pop_into_register(reg);
-		}
 		else
 		{
-			emit("mov %s, dword [%s]", reg, expr->identifier);
+			emit("mov %s, dword ptr [%s]", reg, expr->identifier);
 		}
-		if (symbol->type == PTR)
+		if (expr->type == EXPR_DEREF)
 			emit("mov %s, [%s]", reg, reg);
 	}
-	else if (expr->type == CONSTANT)
+	else
 	{
 		oprintf("mov %s, ", reg);
 		print_constant(&(expr->constant), 1);
-	}
-	else if (expr->type == IVAL_IDENTIFIER)
-	{
-		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL)
-		{
-			emit("mov %s, [ebp %+zd]", reg, symbol->location.offset);
-		}
-		else
-		{
-			emit("mov %s, %s", reg, expr->identifier);
-		}
 	}
 }
 
 void load_address_reg(expr_t *expr, char *reg)
 {
-	if (expr->type == LVALUE)
+	if (expr->val_kind == EXPR_LVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL || symbol->type == AUTO || symbol->type == PTR)
+		if (expr->type == EXPR_DEREF) {
+			oprintf("mov %s, ", reg);
+		} else {
+			oprintf("lea %s, ", reg);
+		}
+		if (symbol->type == SYMBOL_LOCAL || symbol->type == AUTO 
+			 || expr->storage_kind == EXPR_TEMP)
 		{
-			emit("lea %s, [ebp %+zd]", reg, symbol->location.offset);
-		} else if (symbol->type == TEMP) {
-			add_patch_position(expr->identifier, ftell(tmp));
-			emit("lea %s, [ebp @000000]", reg);
+			emit("[ebp %+zd]", symbol->location.offset);
 		}
 		else
 		{
-			emit("lea %s, %s", reg, expr->identifier);
+			emit("%s", expr->identifier);
 		}
 	}
-	else if (expr->type == RVALUE)
+	else if (expr->val_kind == EXPR_RVALUE)
 	{
 		symbol_t *symbol = get_symbol(expr->identifier);
-		if (symbol->type == LOCAL)
+		if (symbol->type == SYMBOL_LOCAL)
 			oprintf("lea %s, [ebp - %zd]\n", reg, symbol->location.offset);
 		else
 			oprintf("lea %s, %s\n", reg, expr->identifier);
+	}
+}
+
+void load_value_reg_to_lvalue(expr_t *expr, char *reg){
+	symbol_t *symbol_l = get_symbol(expr->identifier);
+
+	if (symbol_l->type == SYMBOL_LOCAL || symbol_l->type == AUTO 
+		|| expr->type == EXPR_DEREF || expr->storage_kind == EXPR_TEMP)
+	{
+		emit("mov [ebp %+zd], %s", symbol_l->location.offset, reg);
+	}
+	else
+	{
+		emit("mov dword ptr [%s], %s", expr->identifier, reg);
 	}
 }
 
@@ -235,16 +236,17 @@ void register_to_lvalue(expr_t *expr, char *reg)
 {
 	symbol_t *symbol_l = get_symbol(expr->identifier);
 
-	if (symbol_l->type == LOCAL || symbol_l->type == AUTO || symbol_l->type == PTR)
+	if (expr->type == EXPR_DEREF) {
+		reg_to_deref(expr, reg);
+	}
+	else if (symbol_l->type == SYMBOL_LOCAL || symbol_l->type == AUTO 
+		|| expr->storage_kind == EXPR_TEMP)
 	{
 		emit("mov [ebp %+zd], %s", symbol_l->location.offset, reg);
-	} else if (symbol_l->type == TEMP) {
-		add_patch_position(expr->identifier, ftell(tmp));
-		emit("mov [ebp @000000], %s", reg);
 	}
 	else
 	{
-		emit("mov dword [%s], %s", expr->identifier, reg);
+		emit("mov dword ptr [%s], %s", expr->identifier, reg);
 	}
 }
 
@@ -254,13 +256,13 @@ void reg_to_deref(expr_t *expr, char *reg)
 	
 	if (strcmp(reg, "eax") == 0)
 	{
-		load_value_into_reg(expr, "ebx");
+		load_address_reg(expr, "ebx");
 		// emit("mov ebx, [ebp %+zd]", symbol->location.offset);
 		emit("mov [ebx], eax");
 	}
 	else
 	{
-		load_value_into_reg(expr, "eax");
+		load_address_reg(expr, "eax");
 		// emit("mov eax, [ebp %+zd]", symbol->location.offset);
 		emit("mov [%s], eax", reg);
 	}
@@ -384,25 +386,13 @@ void perform_binary(int op)
 
 void	load_lhs_rhs(expr_t *lhs, expr_t *rhs)
 {
-	if (lhs->type != CONSTANT) {
-		symbol_t *l_symb = get_symbol(lhs->identifier);
-		if (rhs->type != CONSTANT) {
-			symbol_t *r_symb = get_symbol(rhs->identifier);
-			if (l_symb->type == TEMP && r_symb->type == TEMP)
-			{
-				pop_into_register("ecx");
-				pop_into_register("eax");
-				return ;
-			}
-		}
-	}
 	load_value_into_reg(lhs, "eax");
 	load_value_into_reg(rhs, "ecx");
 }
 
 void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 {
-	if (lhs->type != LVALUE)
+	if (lhs->val_kind != EXPR_LVALUE)
 	{
 		yyerror("LHS of assignment must be a Lvalue");
 		return;
@@ -417,15 +407,7 @@ void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 
 	perform_binary(op);
 
-	symbol_t *symbol = get_symbol(lhs->identifier);
-	if (symbol->type == PTR)
-	{
-		reg_to_deref(lhs, "eax");
-	}
-	else
-	{
-		register_to_lvalue(lhs, "eax");
-	}
+	register_to_lvalue(lhs, "eax");
 	oprintf("\n");
 }
 
@@ -433,8 +415,9 @@ void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
 {
 	load_lhs_rhs(lhs, rhs);
 	perform_binary(op);
-	result->type = RVALUE;
-	result->identifier = add_temp_symbol(TEMP, "eax");
+	result->val_kind = EXPR_RVALUE;
+	add_temp_symbol(result);
+	register_to_lvalue(result, "eax");
 	oprintf("\n");
 	/* free expr */
 	free_expr(lhs);
@@ -443,13 +426,13 @@ void binary_op(expr_t *lhs, int op, expr_t *rhs, expr_t *result)
 
 void unary(expr_t *expr, char *op)
 {
-	if (expr->type == LVALUE)
+	if (expr->val_kind == EXPR_LVALUE)
 	{
 		load_value_into_reg(expr, "eax");
 		emit("%s eax", op);
 		register_to_lvalue(expr, "eax");
 	}
-	else if (expr->type == CONSTANT)
+	else if (expr->type == EXPR_CONST)
 	{
 		expr->constant.value++;
 	}
@@ -462,8 +445,10 @@ void unary(expr_t *expr, char *op)
 void return_post_assign(expr_t *parent, expr_t *lhs)
 {
 	load_value_into_reg(lhs, "eax");
-	parent->type = RVALUE;
-	parent->identifier = add_temp_symbol(TEMP, "eax");
+	parent->val_kind = EXPR_RVALUE;
+	parent->type = EXPR_VAL;
+	add_temp_symbol(parent);
+	register_to_lvalue(parent, "eax");
 	free_expr(lhs);
 }
 
@@ -478,7 +463,7 @@ static void emit_global_uninit(void)
 		if (table->entries[i].status != ACTIVE)
 			continue;
 		symbol_t *symbol = table->entries[i].value;
-		oprintf("%s resd %zu\n", table->entries[i].key, symbol->size);
+		oprintf("%s: .zero %zu\n", table->entries[i].key, symbol->size);
 		if (symbol->value.data != NULL)
 			free(symbol->value.data);
 	}
@@ -498,7 +483,7 @@ static void emit_global_init(void)
 		symbol_t *symbol = table->entries[i].value;
 		list_t *list = symbol->value.data;
 		
-		oprintf("%s dd ", table->entries[i].key);
+		oprintf("%s: .long ", table->entries[i].key);
 		node_t *cur = list->head;
 		node_t *prev = NULL;
 		while (cur && list->size--)
@@ -517,7 +502,8 @@ static void emit_global_init(void)
 			free(prev);
 		}
 		if (symbol->size > 0) {
-			oprintf("\ndd %zd dup 0\n", symbol->size);
+			// oprintf("\ndd %zd dup 0\n", symbol->size);
+			oprintf("\n.rept %zd\n.long 0\n.endr\n", symbol->size);
 		}
 		else
 			oprintf("\n");
@@ -531,12 +517,12 @@ void vector_access(expr_t *base, expr_t *offset)
 {
 	symbol_t *offset_symb;
 
-	if (base->type == LVALUE)
+	if (base->val_kind == EXPR_LVALUE)
 	{
 		symbol_t *base_symb = get_symbol(base->identifier);
 		if (is_vector(base_symb)) {
 			load_address_reg(base, "eax");
-			if (offset->type == LVALUE) {
+			if (offset->val_kind == EXPR_LVALUE) {
 				offset_symb = get_symbol(offset->identifier);
 				if (is_vector(offset_symb))
 					yyerror("Both base and offset are vector");
@@ -545,7 +531,7 @@ void vector_access(expr_t *base, expr_t *offset)
 		}
 		else {
 			load_value_into_reg(base, "ebx");
-			if (offset->type != LVALUE) {
+			if (offset->val_kind != EXPR_LVALUE) {
 				yyerror("No vector in vector access");
 			}
 			offset_symb = get_symbol(offset->identifier);
@@ -557,7 +543,7 @@ void vector_access(expr_t *base, expr_t *offset)
 	else
 	{
 		load_value_into_reg(base, "ebx");
-		if (offset->type != LVALUE)
+		if (offset->val_kind != EXPR_LVALUE)
 			yyerror("No vector in vector access");
 		offset_symb = get_symbol(offset->identifier);
 		if (!is_vector(offset_symb))
@@ -574,4 +560,22 @@ void emit_global_var(void)
 		emit_global_init();
 	free_symbol_table(global_uninit);
 	free_symbol_table(global_init);
+}
+
+char *add_temp_symbol(expr_t *expr)
+{
+	static int temp_count = 0;
+	symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
+	char name[16];
+
+	symb->size = 1;
+	expr->storage_kind = EXPR_TEMP;
+	offset_stack[current_depth] -= 4; // TODO: define word size for x86
+	if (offset_stack[current_depth] < max_stack_depth)
+		max_stack_depth = offset_stack[current_depth];
+	symb->location.offset = offset_stack[current_depth];
+	snprintf(name, sizeof(name), "t_%d", temp_count++);
+	add_symbol(name, symb);
+	expr->identifier = strdup(name);
+	temp_count++;
 }

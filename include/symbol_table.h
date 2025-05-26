@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/25 23:01:19 by root             ###   ########.fr       */
+/*   Updated: 2025/05/26 21:39:10 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,21 +16,16 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include "hash_table.h"
+#include "compiler_struct.h"
 
 typedef enum
 {
-	LOCAL,
-	GLOBAL,
+	SYMBOL_LOCAL,
+	SYMBOL_GLOBAL,
+	SYMBOL_EXTRN,
 	// AUTO,
 	// EXTRN,
-} scope_t;
-
-typedef enum
-{
-	VAR,   // word
-	FUNC,  // word
-	ARRAY, // word * size
-} symbol_type_t;
+} symbol_storage_class_t;
 
 typedef enum
 {
@@ -45,8 +40,9 @@ typedef enum
  */
 typedef struct symbol_s
 {
-	scope_t type;
+	symbol_storage_class_t type;
 	ssize_t size; // size for array or function. 0 for variable
+	int is_array;
 	union
 	{
 		void *data; // data is null if not initialized
@@ -73,7 +69,6 @@ extern symbol_table_t *global_init;
 extern symbol_table_t *global_uninit;
 
 extern int offset_stack[];
-extern int temp_offset_stack[];
 extern int current_depth;
 extern htable_t *temp_patch_table;
 extern htable_t *function_table;
@@ -81,7 +76,7 @@ extern htable_t *function_table;
 void init_symbol_table(void);
 void enter_scope(symbol_table_t *table);
 void add_symbol(char *name, void *value);
-void exit_scope(int local_var_size);
+void exit_scope();
 
 /**
  * @details if the symbol is not found, it returns NULL.
@@ -90,7 +85,6 @@ void exit_scope(int local_var_size);
 void *get_symbol(char *name);
 void print_symbol_table(symbol_table_t *s_table);
 void free_symbol_table(symbol_table_t *s_table);
-char *add_temp_symbol(int symb_type, char *reg);
 void add_symbol_table(symbol_table_t *table, const char *name, void *value);
 int is_vector(symbol_t *symb);
 
