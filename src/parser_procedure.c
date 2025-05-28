@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/27 02:38:43 by root             ###   ########.fr       */
+/*   Updated: 2025/05/29 01:31:29 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,11 +68,13 @@ void add_auto_symb(list_t *var_decl_list)
 			symb->size = 1;
 		}
 
-		offset_stack[current_depth] -= symb->size * 4; // TODO: define word size for x86
-		symb->location.offset = offset_stack[current_depth];
-
+		offset_stack_value -= symb->size * 4; // TODO: define word size for x86
+		symb->location.offset = offset_stack_value;
+		
 		/* emit code */
 		add_symbol(var_decl->name, symb);
+		// ht_insert(auto_table, 
+		// 	(const void *)(uint64_t)-offset_stack_value, symb);
 		free(var_decl->name);
 		free(var_decl);
 		prev = cur;
@@ -575,10 +577,10 @@ char *add_temp_symbol(expr_t *expr)
 
 	symb->size = 1;
 	expr->storage_kind = EXPR_TEMP;
-	offset_stack[current_depth] -= 4; // TODO: define word size for x86
-	if (offset_stack[current_depth] < max_stack[current_depth])
-		max_stack[current_depth] = offset_stack[current_depth];
-	symb->location.offset = offset_stack[current_depth];
+	offset_stack_value -= 4; // TODO: define word size for x86
+	if (offset_stack_value < max_stack_value)
+		max_stack_value = offset_stack_value;
+	symb->location.offset = offset_stack_value;
 	snprintf(name, sizeof(name), "t_%d", temp_count++);
 	add_symbol(name, symb);
 	expr->identifier = strdup(name);

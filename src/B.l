@@ -122,7 +122,9 @@ char *str_to_assembly_str(const char *str);
 int is_valid_escape(char c) {
     switch (c) {
         case '0':
+            return 0;
         case 'e':
+            return 
         case '(':
         case ')':
         case 't': 
@@ -132,7 +134,7 @@ int is_valid_escape(char c) {
         case 'n':
             return 1;  // valid escape
         default:
-            return 0;
+            return -1;
     }
 }
 
@@ -145,7 +147,7 @@ int process_charconst(const char* text) {
     while (*p && *p != '\'') {  // until closing '
         if (*p == '\\') {
             p++;  // skip '\'
-            if (*p == '\0' || !is_valid_escape(*p)) {
+            if (*p == '\0' || is_valid_escape(*p) == -1) {
                 fprintf(stderr, "Invalid escape sequence in char constant\n");
                 return ERROR;
             }

@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/27 02:10:57 by root             ###   ########.fr       */
+/*   Updated: 2025/05/29 01:31:42 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,16 +25,18 @@ void init_symbol_table(void)
 {
 	/* global table*/
 	global_table = (symbol_table_t *)xmalloc(sizeof(symbol_table_t));
-	global_table->table = ht_create_table();
+	global_table->table = ht_create_table(VALUE_STR);
 	global_table->parent = NULL;
 	
 	
 	global_init = (symbol_table_t *)xmalloc(sizeof(symbol_table_t));
 	global_uninit = (symbol_table_t *)xmalloc(sizeof(symbol_table_t));
-	global_init->table = ht_create_table();
-	global_uninit->table = ht_create_table();	
+	global_init->table = ht_create_table(VALUE_STR);
+	global_uninit->table = ht_create_table(VALUE_STR);	
 	current_table = global_table;
-	function_table = ht_create_table();
+	function_table = ht_create_table(VALUE_STR);
+    string_table = ht_create_table(VALUE_STR);
+	// auto_table = ht_create_table(VALUE_INT);
 }
 
 void enter_scope(symbol_table_t *table)
@@ -43,10 +45,10 @@ void enter_scope(symbol_table_t *table)
 	symbol_table_t *new_scope;
 
 	new_scope = (symbol_table_t *)xmalloc(sizeof(symbol_table_t));
-	new_scope->table = ht_create_table();
+	new_scope->table = ht_create_table(VALUE_STR);
 	new_scope->parent = table;
-	current_depth++;
-	offset_stack[current_depth] = 0;
+	offset_stack_value = 0;
+	max_stack_value = 0;
 	current_table = new_scope;
 }
 
@@ -63,7 +65,18 @@ void exit_scope()
 	current_table = old_table->parent;
 	// print_table(old_table->table);
 	free_symbol_table(old_table);
-	current_depth--;
+
+	// reset auto table
+	// if (auto_table->capacity > 32) {
+	// 	free(auto_table->entries);
+	// 	auto_table->entries = xmalloc(32);
+	// }
+	// for (int i = 0; i < auto_table->capacity; i++)
+	// {
+	// 	auto_table->entries[i].status = EMPTY;
+	// }
+	// auto_table->capacity = 32;
+	// auto_table->count = 0;
 }
 
 void add_symbol_table(symbol_table_t *table, const char *name, void *value)

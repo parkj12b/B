@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:48:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/25 23:24:22 by root             ###   ########.fr       */
+/*   Updated: 2025/05/29 00:44:54 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include "inttypes.h"
 #include "parser.h"
 
-htable_t *ht_create_table(void)
+htable_t *ht_create_table(htable_type_t type)
 {
 	htable_t *table;
 
@@ -25,17 +25,27 @@ htable_t *ht_create_table(void)
 	table->count = 0;
 	table->capacity = INIT_TABLE_CAPACITY;
 	table->entries = (entry_t *)xmalloc(sizeof(entry_t) * table->capacity);
+	table->type = type;
 	for (int i = 0; i < table->capacity; i++)
 	{
-		table->entries[i].key = NULL;
-		table->entries[i].value = NULL;
 		table->entries[i].status = EMPTY;
 	}
 	return (table);
 }
 
-void ht_destroy_table(htable_t *table)
-{
+void ht_destroy_table_int(htable_t *table) {
+	for (int i = 0; i < table->capacity; i++)
+	{
+		if (table->entries[i].status == ACTIVE)
+		{
+			free(table->entries[i].value);
+		}
+	}
+	free(table->entries);
+	free(table);
+}
+
+void ht_destroy_table_str(htable_t *table) {
 	for (int i = 0; i < table->capacity; i++)
 	{
 		if (table->entries[i].status == ACTIVE)
@@ -48,12 +58,21 @@ void ht_destroy_table(htable_t *table)
 	free(table);
 }
 
+void ht_destroy_table(htable_t *table)
+{
+	if (table->type == VALUE_INT)
+		ht_destroy_table_int(table);
+	else
+		ht_destroy_table_str(table);
+}
+
 // Return 64-bit FNV-1a hash for key (NUL-terminated). See description:
 // https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
-static uint64_t hash(const char *key)
+uint64_t hash_str(const void *key)
 {
 	uint64_t hash = FNV_OFFSET;
-	for (const char *p = key; *p; p++)
+	const char *str = (const char *) key;
+	for (const char *p = str; *p; p++)
 	{
 		hash ^= (uint64_t)(unsigned char)(*p);
 		hash *= FNV_PRIME;
@@ -61,7 +80,22 @@ static uint64_t hash(const char *key)
 	return hash;
 }
 
-void ht_insert(htable_t *table, const char *key, void *value)
+uint64_t hash_int(const void *num) {
+	uint64_t x = (uint64_t)num;
+    x = (x ^ (x >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
+    x = (x ^ (x >> 27)) * UINT64_C(0x94d049bb133111eb);
+    x = x ^ (x >> 31);
+    return x;
+}
+
+uint64_t hash(const void *key, htable_type_t type) {
+	if (type == VALUE_INT)
+		return hash_int(key);
+	else
+		return hash_str(key);
+}
+
+void ht_insert(htable_t *table, const void *key, void *value)
 {
 	uint64_t index;
 	entry_t *entry;
@@ -69,11 +103,12 @@ void ht_insert(htable_t *table, const char *key, void *value)
 	if (table->count >= table->capacity * MAX_LOAD_FACTOR)
 		ht_expand_table(table);
 
-	index = hash(key) % table->capacity;
+	index = hash(key, table->type) % table->capacity;
 	entry = table->entries;
 	while (entry[index].status == ACTIVE)
 	{
-		if (strcmp(entry[index].key, key) == 0)
+		if ((table->type == VALUE_STR && strcmp(entry[index].key, key) == 0)
+			|| (table->type == VALUE_INT && entry[index].key == key))
 		{
 			free((void *)entry[index].key);
 			free(entry[index].value);
@@ -81,18 +116,21 @@ void ht_insert(htable_t *table, const char *key, void *value)
 		}
 		index = (index + 1) % table->capacity;
 	}
-	entry[index].key = strdup(key);
+	if (table->type == VALUE_STR)
+		entry[index].key = strdup(key);
+	else
+		entry[index].key = key;
 	entry[index].value = value;
 	entry[index].status = ACTIVE;
 	table->count++;
 }
 
-void *ht_search(htable_t *table, const char *key, int get_entry)
+void *ht_search(htable_t *table, const void *key, int get_entry)
 {
 	int index;
 	entry_t *entry;
 
-	index = (hash(key) & (table->capacity - 1));
+	index = (hash(key, table->type) & (table->capacity - 1));
 	entry = &table->entries[index];
 	while (entry->status != EMPTY)
 	{
@@ -137,16 +175,16 @@ void ht_expand_table(htable_t *table)
 	free(old_entries);
 }
 
-void ht_delete(htable_t *table, const char *key)
-{
-	int index;
+void ht_delete_str(htable_t *table, const void *key) {
 	entry_t *entry;
+	int index;
 
-	index = (hash(key) & (table->capacity - 1));
+	index = (hash(key, table->type) & (table->capacity - 1));
 	entry = &table->entries[index];
+	
 	while (entry->status != EMPTY)
 	{
-		if (entry->status == ACTIVE && strcmp(entry->key, key) == 0)
+		if (entry->status == ACTIVE && (strcmp(entry->key, key) == 0))
 		{
 			free((void *)entry->key);
 			free(entry->value);
@@ -162,6 +200,44 @@ void ht_delete(htable_t *table, const char *key)
 		index = ((index + 1) & (table->capacity - 1));
 		entry = &table->entries[index];
 	}
+}
+
+void ht_delete_int(htable_t *table, const void *key) {
+	int index;
+	entry_t *entry;
+
+	index = (hash(key, table->type) & (table->capacity - 1));
+	entry = &table->entries[index];
+
+	uint64_t entry_key;
+	uint64_t int_key = (uint64_t) key;
+
+	while (entry->status != EMPTY)
+	{
+		entry_key = (uint64_t) key;
+		if (entry->status == ACTIVE && entry_key == int_key)
+		{
+			free(entry->value);
+			entry->status = DELETED;
+			table->count--;
+			if (table->count <= table->capacity * MIN_LOAD_FACTOR)
+			{
+				eprintf("Shrinking table from %d to %d. current count %d\n", table->capacity, table->capacity / 2, table->count);
+				ht_shrink_table(table);
+			}
+			return;
+		}
+		index = ((index + 1) & (table->capacity - 1));
+		entry = &table->entries[index];
+	}
+}
+
+void ht_delete(htable_t *table, const void *key)
+{
+	if (table->type == VALUE_STR)
+		ht_delete_str(table, key);
+	else
+		ht_delete_int(table, key);
 }
 
 void ht_shrink_table(htable_t *table)

@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/27 02:32:03 by root             ###   ########.fr       */
+/*   Updated: 2025/05/29 01:19:31 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,5 +92,5 @@ void increase_label()
 
 void pop_register()
 {
-	offset_stack[current_depth] += 4;
+	offset_stack_value += 4;
 }

@@ -6,12 +6,14 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:26:22 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/25 22:56:00 by root             ###   ########.fr       */
+/*   Updated: 2025/05/29 00:59:38 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef HASH_TABLE_H
 #define HASH_TABLE_H
+
+#include <inttypes.h>
 
 /* table attribute */
 #define INIT_TABLE_CAPACITY 16
@@ -32,16 +34,23 @@ typedef enum
 
 typedef struct
 {
-	const char *key;
+	const void *key;
 	void *value;
 	entry_status_t status;
 } entry_t;
+
+typedef enum
+{
+	VALUE_INT,
+	VALUE_STR,
+} htable_type_t;
 
 typedef struct
 {
 	int count;
 	int capacity;
 	entry_t *entries;
+	htable_type_t type;
 } htable_t;
 
 /* hash table functions */
@@ -49,7 +58,7 @@ typedef struct
 /**
  * * @brief Create a new hash table.
  */
-htable_t *ht_create_table(void);
+htable_t *ht_create_table(htable_type_t type);
 
 /**
  * * @brief Destroy the hash table and free all memory.
@@ -62,12 +71,12 @@ void ht_destroy_table(htable_t *table);
  * * @details 	If the key already exists, the value is updated.
  * 				If the table is over MAX_LOAD_FACTOR, it will be expanded.
  */
-void ht_insert(htable_t *table, const char *key, void *value);
+void ht_insert(htable_t *table, const void *key, void *value);
 
 /**
  * * @brief Search for a value in the hash table by key.
  */
-void *ht_search(htable_t *table, const char *key, int get_entry);
+void *ht_search(htable_t *table, const void *key, int get_entry);
 
 /**
  * * @brief Expand the hash table to accommodate more entries.
@@ -79,7 +88,7 @@ void ht_expand_table(htable_t *table);
  * * @details 	If the key does not exist, nothing happens.
  * 				If the table is under MIN_LOAD_FACTOR, it will be shrunk.
  */
-void ht_delete(htable_t *table, const char *key);
+void ht_delete(htable_t *table, const void *key);
 
 /**
  * * @brief Shrink the hash table to save memory.
@@ -90,5 +99,9 @@ void ht_shrink_table(htable_t *table);
 const char *st_get_label(const char *str);
 void print_table(htable_t *table);
 void st_print_table(void);
+
+uint64_t hash_str(const void *key);
+uint64_t hash_int(const void *x);
+
 
 #endif

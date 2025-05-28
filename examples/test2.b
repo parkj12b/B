@@ -7,8 +7,8 @@ d[5];
 e[5] 1, 2, "hello";
 f[2] 1, 2, 3, 4, 5;
 main() {
-	auto a;
-	a = 100;
-	printf("%d\n", a = 2);
+	auto a, b;
+	a = '\n';
+	printf("%d\n", a);
 
 }

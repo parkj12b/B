@@ -33,15 +33,17 @@ symbol_table_t  *global_init;
 symbol_table_t  *global_uninit;
 htable_t        *function_table;
 htable_t        *string_table;
+htable_t        *auto_table;
 
 size_t          label_counter = 0;
 size_t          label_index = 0;
 size_t          label_stack[128];
 
 /* offset stack */
-int offset_stack[128];
-int max_stack[128];
-int current_depth = 0;
+int offset_stack_value;
+int max_stack_value;
+size_t local_stack[128];
+int temp_depth = 0;
 %}
 
 %code requires {
@@ -211,7 +213,7 @@ definition:
 
         // emit(".%s.init:", $1);
         emit("1:");
-        emit("sub esp, %d", -max_stack[current_depth]);
+        emit("sub esp, %d", -max_stack_value);
         emit("jmp 2b\n");
         exit_scope();
         assert(current_table == global_table);
@@ -858,7 +860,6 @@ int main(int argc, char **argv) {
 
     // Initialize the symbol table
     init_symbol_table();
-    string_table = ht_create_table();
 
     init_assembly();
 

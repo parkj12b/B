@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/26 21:39:10 by root             ###   ########.fr       */
+/*   Updated: 2025/05/29 01:22:09 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,10 +68,12 @@ extern symbol_table_t *current_table;
 extern symbol_table_t *global_init;
 extern symbol_table_t *global_uninit;
 
-extern int offset_stack[];
-extern int current_depth;
+extern int offset_stack_value;
 extern htable_t *temp_patch_table;
 extern htable_t *function_table;
+extern htable_t *string_table;
+extern htable_t *auto_table;
+
 
 void init_symbol_table(void);
 void enter_scope(symbol_table_t *table);
