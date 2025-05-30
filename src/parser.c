@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/29 01:19:31 by root             ###   ########.fr       */
+/*   Updated: 2025/05/29 15:25:06 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,6 +81,10 @@ void free_expr(expr_t *expr)
 	if (expr->type != EXPR_CONST)
 	{
 		free(expr->identifier);
+	}
+	if (expr->storage_kind == EXPR_TEMP)
+	{
+		pop_register();
 	}
 }
 

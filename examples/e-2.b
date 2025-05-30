@@ -5,8 +5,6 @@
      1/2! + 1/3! + ... = .111....
    where the bases of the digits are 2, 3, 4, . . . */
 
-v[2000];
-n 2000;
 
 main() {
 	extrn putchar, n, v;
@@ -17,9 +15,6 @@ main() {
 		v[i++] = 1;
 	}
 	while(col < 2 * n) {
-		/*
-		printf("%d\n", col);
-		*/
 		a = n + 1;
 		c = i = 0;
 		while (i < n) {
@@ -33,3 +28,5 @@ main() {
 			putchar(col % 50 ? ' ' : '\n');
 	}
 }
+v[2000];
+n 2000;

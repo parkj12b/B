@@ -4,6 +4,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <assert.h>
+#include <stdbool.h>
 #include "hash_table.h"
 #include "symbol_table.h"
 #include "vector.h"
@@ -13,7 +14,6 @@
 #include "parser_procedure.h"
 #include "compiler_struct.h"
 #include "yyfree.h"
-#include <assert.h>
 
 int yylex(void);
 extern int  yylineno;
@@ -42,7 +42,6 @@ size_t          label_stack[128];
 /* offset stack */
 int offset_stack_value;
 int max_stack_value;
-size_t local_stack[128];
 int temp_depth = 0;
 %}
 
@@ -137,6 +136,7 @@ definition:
             symbol->value.data = list;
             symbol->size = list->size;
             symbol->type = SYMBOL_GLOBAL;
+            symbol->is_array = true;
             memcpy(symbol_cpy, symbol, sizeof(symbol_t));
             add_symbol_table(global_init, $1, symbol);
             add_symbol($1, symbol_cpy);
@@ -166,6 +166,7 @@ definition:
             list_t *list = (list_t *)xmalloc(sizeof(list_t));
             memcpy(list, &$5.value.list, sizeof(list_t));
             symbol->value.data = list;
+            symbol->is_array = true;
             memcpy(symbol_cpy, symbol, sizeof(symbol_t));
             add_symbol_table(global_init, $1, symbol);
             add_symbol($1, symbol_cpy);
@@ -193,7 +194,9 @@ definition:
         emit("%s:", $1);
         emit("push ebp");
         emit("mov ebp, esp\n");
-
+        emit("push ebx");
+        offset_stack_value -= 4;
+        
         /* jump reserve */
 
         // emit("jmp .%s.init", $1);
@@ -207,6 +210,8 @@ definition:
         }
         print_symbol_table(current_table);
     } RPAREN statement {
+        emit("pop ebx");
+        pop_register();
         emit("jmp exit\n");
 
         /* jump reserve */
@@ -215,6 +220,7 @@ definition:
         emit("1:");
         emit("sub esp, %d", -max_stack_value);
         emit("jmp 2b\n");
+
         exit_scope();
         assert(current_table == global_table);
         free($1);
@@ -626,9 +632,9 @@ expr:
         }
         $$.val_kind = EXPR_RVALUE;
         $$.type = EXPR_VAL;
+        free_expr(&$1);
         add_temp_symbol(&$$);
         register_to_lvalue(&$$, "eax");
-        free_expr(&$1);
     }
     | assign {
         $$ = $1;
@@ -644,7 +650,7 @@ expr:
         unary(&$2, "inc");
         $$ = $2;
         $$.type = EXPR_VAL;
-        register_to_lvalue(&$$, "eax");
+        $$.val_kind = EXPR_RVALUE;
     }
     | DEC expr %prec DEC {
         if ($2.val_kind != EXPR_LVALUE) {
@@ -653,7 +659,7 @@ expr:
         unary(&$2, "dec");
         $$ = $2;
         $$.type = EXPR_VAL;
-        register_to_lvalue(&$$, "eax");
+        $$.val_kind = EXPR_RVALUE;
     }
     | expr INC {
         if ($1.val_kind != EXPR_LVALUE) {
@@ -661,28 +667,30 @@ expr:
         }
 
         load_value_into_reg(&$1, "eax");
+        emit("mov ecx, eax");
+        unary(&$1, "inc");
+        free_expr(&$1);
         add_temp_symbol(&$$);
         $$.val_kind = EXPR_RVALUE;
         $$.type = EXPR_VAL;
-        register_to_lvalue(&$$, "eax");
-        unary(&$1, "inc");
-        free_expr(&$1);
+        register_to_lvalue(&$$, "ecx");
     }
     | expr DEC {
         if ($1.val_kind != EXPR_LVALUE) {
             yyerror("LHS of decrement must be a Lvalue");
         }
         load_value_into_reg(&$1, "eax");
-        add_temp_symbol(&$$);
-        $$.type = EXPR_VAL;
-        $$.val_kind = EXPR_RVALUE;
-        register_to_lvalue(&$$, "eax");
+        emit("mov ecx, eax");
         unary(&$1, "dec");
         free_expr(&$1);
+        add_temp_symbol(&$$);
+        $$.val_kind = EXPR_RVALUE;
+        $$.type = EXPR_VAL;
+        register_to_lvalue(&$$, "ecx");
     }
     | MINUS expr %prec UNARY {
-        $$ = $2;
         load_value_into_reg(&$2, "eax");
+        free_expr(&$2);
         emit("neg eax");
         $$.type = EXPR_VAL;
         $$.val_kind = EXPR_RVALUE;
@@ -690,9 +698,8 @@ expr:
         register_to_lvalue(&$$, "eax");
     }
     | NOT expr %prec UNARY {
-        $$ = $2;
-        
         load_value_into_reg(&$2, "eax");
+        free_expr(&$2);
         emit("test eax, eax");
         emit("setz al");
         emit("movzx eax, al");
@@ -700,26 +707,24 @@ expr:
         $$.val_kind = EXPR_RVALUE;
         add_temp_symbol(&$$);
         register_to_lvalue(&$$, "eax");
-        free_expr(&$2);
     }
     | STAR expr %prec DEREF {
         load_value_into_reg(&$2, "eax");
+        free_expr(&$2);
         add_temp_symbol(&$$);
         $$.type = EXPR_DEREF;
         $$.val_kind = EXPR_LVALUE;
         load_value_reg_to_lvalue(&$$, "eax");
-        free_expr(&$2);
     }
     | AMPERSAND expr %prec ADDR_OF {
-        $$ = $2;
         if ($2.val_kind == EXPR_RVALUE)
             yyerror("L-Value required for taking the address of.");
         $$.type = EXPR_VAL;
         $$.val_kind = EXPR_RVALUE;
         load_address_reg(&$2, "eax");
+        free_expr(&$2);
         add_temp_symbol(&$$);
         register_to_lvalue(&$$, "eax");
-
     }
     | expr LBRACKET expr RBRACKET { //TODO: decide what to do with vector_access. EXPR_LVALUE
         vector_access(&$1, &$3);
@@ -730,19 +735,18 @@ expr:
         $$.type = EXPR_DEREF;
         $$.storage_kind = EXPR_TEMP;
         load_value_reg_to_lvalue(&$$, "ebx");
-        free_expr(&$1);
-        free_expr(&$3);
     }
     | expr QUESTION {
         load_value_into_reg(&$1, "eax");
+        free_expr(&$1);
         $<expr>$.val_kind = EXPR_RVALUE;
         add_temp_symbol(&$<expr>$);
         emit("test eax, eax");
         emit("jz .LF%zu", label_counter);
-        free_expr(&$1);
     } expr COLON {
         load_value_into_reg(&$4, "eax");
-        // register_to_lvalue(&$<expr>3, "eax");
+        free_expr(&$4);
+        register_to_lvalue(&$<expr>3, "eax");
         $<expr>$ = $<expr>3;
         emit("jmp .LE%zu", label_counter);
         emit(".LF%zu:", label_counter);
@@ -750,6 +754,7 @@ expr:
         $$.type = EXPR_VAL;
         $$.storage_kind = EXPR_TEMP;
         load_value_into_reg(&$7, "eax");
+        free_expr(&$7);
         register_to_lvalue(&$<expr>6, "eax");
         $$ = $<expr>6;
         emit(".LE%zu:", label_counter);

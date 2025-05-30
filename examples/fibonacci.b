@@ -1,22 +1,28 @@
-/* This program prints out the n-th fibonacci number. */
+fib(n) {
+  auto a, b, c, i;
 
-n 10;
+  a = 0;
+  b = 1;
+  i = 0;
+  while (i < n) {
+    c = a + b;
+    a = b;
+    b = c;
 
-main() {
-    extrn printf, fib, fib_rec, n;
-    printf("%d*n", fib(n));
+    i++;
+  }
+
+  return (a);
 }
 
-fib(n) {
-    auto a, b, c, i;
-    b = 1;
-    i = 0;
-
-    while(i++ < n) {
-        c = a + b;
-        a = b;
-        b = c;
-    }
-
-    return(a);
+main() {
+    printf("%d\n", fib(1));
+    printf("%d\n", fib(2));
+    printf("%d\n", fib(3));
+    printf("%d\n", fib(4));
+    printf("%d\n", fib(5));
+    printf("%d\n", fib(6));
+    printf("%d\n", fib(7));
+    printf("%d\n", fib(8));
+    return (0);
 }

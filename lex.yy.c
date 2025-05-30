@@ -2221,17 +2221,23 @@ void yyfree (void * ptr )
 int is_valid_escape(char c) {
     switch (c) {
         case '0':
-        case 'e':
-        case '(':
-        case ')':
-        case 't': 
-        case '\\':
-        case '\'': 
-        case '"': 
-        case 'n':
-            return 1;  // valid escape
-        default:
             return 0;
+        case '(':
+            return '(';
+        case ')':
+            return ')';
+        case 't': 
+            return 9;
+        case '\\':
+            return 92;
+        case '\'': 
+            return 39;
+        case '"': 
+            return 34;
+        case 'n':
+            return 10;
+        default:
+            return -1;
     }
 }
 
@@ -2239,17 +2245,19 @@ int process_charconst(const char* text) {
     int logical_chars = 0;
     int char_value = 0;
     int is_escape_char = 0;
+    int escape_value = 0;
     const char* p = text + 1;  // skip opening '
 
     while (*p && *p != '\'') {  // until closing '
         if (*p == '\\') {
             p++;  // skip '\'
-            if (*p == '\0' || !is_valid_escape(*p)) {
+            escape_value = is_valid_escape(*p);
+            if (*p == '\0' || escape_value == -1) {
                 fprintf(stderr, "Invalid escape sequence in char constant\n");
                 return ERROR;
             }
-            char_value << 1;
-            char_value |= *p;  // store the escaped char
+            char_value <<= 1;
+            char_value |= escape_value;  // store the escaped char
             p++;  // consume escaped char
             logical_chars++;
         } else {

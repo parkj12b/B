@@ -36,6 +36,10 @@ printf("3 ---------\n");
 	h_2[7] = 7;
 	printf("%d %d\n", h_2[0], h_2[7]);
 
+	g = 0;
+	printf("expected: 1, %d\n", a[g++]);
+	g = 1;
+	printf("expected: 3, %d\n", a[++g]);
 /* 6.3 */
 printf("4 ---------\n");
 	printf("loop start\n");

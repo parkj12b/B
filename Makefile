@@ -26,7 +26,7 @@ SRCS = $(addprefix src/, $(SRC))
 
 CC = cc
 
-CFLAGS = -lfl -g #-fsanitize=address
+CFLAGS = -lfl -g -fsanitize=address
 
 INCLUDES = -Iinclude -Ilibft/include
 

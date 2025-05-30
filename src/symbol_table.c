@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/29 01:31:42 by root             ###   ########.fr       */
+/*   Updated: 2025/05/30 19:17:02 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,18 +65,6 @@ void exit_scope()
 	current_table = old_table->parent;
 	// print_table(old_table->table);
 	free_symbol_table(old_table);
-
-	// reset auto table
-	// if (auto_table->capacity > 32) {
-	// 	free(auto_table->entries);
-	// 	auto_table->entries = xmalloc(32);
-	// }
-	// for (int i = 0; i < auto_table->capacity; i++)
-	// {
-	// 	auto_table->entries[i].status = EMPTY;
-	// }
-	// auto_table->capacity = 32;
-	// auto_table->count = 0;
 }
 
 void add_symbol_table(symbol_table_t *table, const char *name, void *value)
@@ -92,19 +80,6 @@ void add_symbol_table(symbol_table_t *table, const char *name, void *value)
 void add_symbol(char *name, void *value)
 {
 	add_symbol_table(current_table, name, value);
-	
-	if (current_table == global_table)
-		return ;
-	symbol_t *symb_arg = (symbol_t *)value;
-	if (symb_arg->type != EXTRN)
-		return ;
-	if (ht_search(global_table->table, name, 0) != NULL)
-		return ;
-	
-	symbol_t *symb = (symbol_t *)xmalloc(sizeof(symbol_t));
-	memcpy(symb, value, sizeof(symbol_t));
-	symb->type = EXTRN;
-	add_symbol_table(global_table, name, symb);
 }
 
 void *get_symbol_table(symbol_table_t *table, char *name)
@@ -124,12 +99,6 @@ void *get_symbol(char *name)
 	symbol_t	*symb = get_symbol_table(current_table, name);
 	if (!symb)
 		yyerror("No such symbol found\n");
-	if (symb->type == SYMBOL_EXTRN)
-	{
-		symb = get_symbol_table(global_table, name);
-		if (!symb)
-			yyerror("No such symbol found\n");
-	}
 	return symb;
 }
 
@@ -150,7 +119,5 @@ int is_vector(symbol_t *symb)
 {
 	eprintf("size: %zd\n", symb->size);
 
-	if (symb->size > 1)
-		return 1;
-	return 0;
+	return (symb->type == SYMBOL_EXTRN);
 }
