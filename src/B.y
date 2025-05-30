@@ -127,6 +127,7 @@ definition:
             symbol->size = 1;
             symbol->value.data = NULL;
             symbol->type = SYMBOL_GLOBAL;
+            symbol->is_array = false;
             memcpy(symbol_cpy, symbol, sizeof(symbol_t));
             add_symbol_table(global_uninit, $1, symbol);
             add_symbol($1, symbol_cpy);
@@ -136,7 +137,10 @@ definition:
             symbol->value.data = list;
             symbol->size = list->size;
             symbol->type = SYMBOL_GLOBAL;
-            symbol->is_array = true;
+            if (symbol->size > 1)
+                symbol->is_array = true;
+            else
+                symbol->is_array = false;
             memcpy(symbol_cpy, symbol, sizeof(symbol_t));
             add_symbol_table(global_init, $1, symbol);
             add_symbol($1, symbol_cpy);

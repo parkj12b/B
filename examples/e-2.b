@@ -11,9 +11,10 @@ main() {
 	auto i, c, col, a;
 
 	i = col = 0;
+	printf("n: %d\n");
 	while(i < n) {
-		printf("TODO: \n");
 		v[i++] = 1;
+		printf("%d\n", i);
 	}
 	while(col < 2 * n) {
 		a = n + 1;
