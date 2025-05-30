@@ -12,6 +12,7 @@ main() {
 
 	i = col = 0;
 	while(i < n) {
+		printf("TODO: \n");
 		v[i++] = 1;
 	}
 	while(col < 2 * n) {

@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/30 21:36:54 by root             ###   ########.fr       */
+/*   Updated: 2025/05/30 22:12:35 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -546,18 +546,18 @@ static void emit_global_init(void)
 
 void vector_access(expr_t *base, expr_t *offset)
 {
-	if (offset->type != EXPR_CONST)
-	{
-		load_value_into_reg(base, "ebx");
-		free_expr(base);
-		load_value_into_reg(offset, "eax");
-		free_expr(offset);
-	}
-	else
+	if (base->type != EXPR_CONST)
 	{
 		load_value_into_reg(base, "eax");
 		free_expr(base);
 		load_value_into_reg(offset, "ebx");
+		free_expr(offset);
+	}
+	else
+	{
+		load_value_into_reg(base, "ebx");
+		free_expr(base);
+		load_value_into_reg(offset, "eax");
 		free_expr(offset);
 	}
 }

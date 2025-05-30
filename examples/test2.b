@@ -3,6 +3,8 @@ v[10];
 u[10] 1, 2, 3;
 main() {
 	extrn u, v;
+    auto i;
+    i = 0;
 
 	printf("before:                 u: [%d] v: [%d]\n", u, v);
 
@@ -14,5 +16,10 @@ main() {
 	printf("address u:              [%d]\n", &u);
 	printf("address addr->deref:    [%d] == [%d]\n", *(&u), u);
 	printf("address addr[0]->deref: [%d] == [1]\n", *&(u[0]));
+    
+    /* using variable offset */
+    printf("%d\n", i);
+    printf("[1] == [%d]\n", v[i]);
+    
     return (0);
 }
