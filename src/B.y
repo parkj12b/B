@@ -194,8 +194,10 @@ definition:
         } else {
             symbol->size = $3.value.list.size;
         }
+        symbol->type = SYMBOL_FUNCTION;
         add_symbol($1, symbol);
         emit("%s:", $1);
+        emit(".long %s + 4", $1);
         emit("push ebp");
         emit("mov ebp, esp\n");
         emit("push ebx");
@@ -446,6 +448,7 @@ colon:
     IDENTIFIER COLON {
         /* labels are local */
         emit(".%s:", $1);
+        emit(".long .%s + 4", $1);
         free($1);
     }
     ;
@@ -625,7 +628,9 @@ expr:
             function_call(&($3.value.list));
         }
         if ($1.val_kind == EXPR_LVALUE) {
-            emit("call %s\n", $1.identifier);
+            symbol_t *symbol = get_symbol($1.identifier);
+
+            emit("call [%s]\n", $1.identifier);
         } else {
             emit("call %zu\n", $1.value); //TODO: fix it so function ptr can work
         }

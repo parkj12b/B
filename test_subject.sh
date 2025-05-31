@@ -9,8 +9,8 @@ compile()
     gcc -c -m32 -x assembler "$(eval echo \$S$i)" -o $(eval echo \$O$i)
     rm "$(eval echo \$S$i)"
     done
-    ld -m elf_i386 $(eval echo $(seq -f '$O%.0f' -s ' ' 1 $#)) brt0.o
+    ld -m elf_i386 $(eval echo $(seq -f '$O%.0f' -s ' ' 1 $#)) brt0.o ./test_lib/libb.a
     rm $(eval echo $(seq -f '$O%.0f' -s ' ' 1 $#))
 )
 
-compile examples/test2.b
+compile examples/test.b

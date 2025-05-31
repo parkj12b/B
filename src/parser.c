@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/29 15:25:06 by root             ###   ########.fr       */
+/*   Updated: 2025/05/31 21:57:59 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,9 @@ void emit_extern(void)
 		if ((size_t)function_table->entries[i].value == REFERENCED)
 		{
 			oprintf(".extern %s\n", function_table->entries[i].key);
+		} else if ((size_t)function_table->entries[i].value == DECLARED)
+		{
+			oprintf(".globl %s\n", function_table->entries[i].key);
 		}
 	}
 	htable_t *gtable = global_table->table;

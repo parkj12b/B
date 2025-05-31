@@ -1,9 +1,8 @@
-v[10] 1, 2, 3;
-
 main() {
-	extrn v;
-	auto i;
+	extrn printf, char, putchar, syscall;
+	auto hello;
 
-	i = 0;
-	printf("%d\n", v[i]);
+	hello = "hello world!\n";
+
+	return ;
 }

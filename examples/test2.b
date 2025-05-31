@@ -2,6 +2,7 @@
 v[10];
 u[10] 1, 2, 3;
 main() {
+	extrn printf;
 	extrn u, v;
     auto i;
     i = 0;

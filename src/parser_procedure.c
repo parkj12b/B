@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/07 21:08:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/30 22:12:35 by root             ###   ########.fr       */
+/*   Updated: 2025/05/31 21:13:44 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,20 +60,24 @@ void add_auto_symb(list_t *var_decl_list)
 		if (var_decl->constant != NULL)
 		{
 			symb->size = var_decl->constant->value;
+			symb->is_array = true;
 			free(var_decl->constant);
 		}
 		else
 		{
+			symb->is_array = false;
 			symb->size = 1;
 		}
-
-		offset_stack_value -= symb->size * 4; // TODO: define word size for x86
+		if (symb->size <= 0)
+			yyerror("Variable size must be greater than 0");
+		offset_stack_value -= (symb->size + symb->is_array) * 4; // TODO: define word size for x86
 		symb->location.offset = offset_stack_value;
-		
-		/* emit code */
+		if (var_decl->constant != NULL)
+		{
+			emit("lea eax, [ebp %+zd]", symb->location.offset + 4);
+			emit("mov [ebp %+zd], eax", symb->location.offset);
+		}
 		add_symbol(var_decl->name, symb);
-		// ht_insert(auto_table, 
-		// 	(const void *)(uint64_t)-offset_stack_value, symb);
 		free(var_decl->name);
 		free(var_decl);
 		prev = cur;
@@ -132,9 +136,7 @@ void function_call(list_t *expr_list)
 				oprintf("push dword ptr ");
 				print_constant(&expr->constant, 1);
 			} else {
-				oprintf("lea eax, [");
-				print_constant(&expr->constant, 0);
-				emit("]");
+				load_value_into_reg(expr, "eax");
 				emit("push eax");
 			}
 			
@@ -166,11 +168,19 @@ void function_call(list_t *expr_list)
 	}
 }
 
+static void load_const_into_reg(const_t *constant, char *reg) {
+	if (constant->type == CONST_STRING)
+		oprintf("lea %s, ", reg);	
+	else
+		oprintf("mov %s, ", reg);
+	print_constant(constant, 1);
+}
+
 void load_value_into_reg(expr_t *expr, char *reg)
 {
 	if (expr->type == EXPR_CONST) {
-		oprintf("mov %s, ", reg);
-		print_constant(&(expr->constant), 1);
+		const_t *constant = &expr->constant;
+		load_const_into_reg(constant, reg);
 	} else {
 		symbol_t *symbol = get_symbol(expr->identifier);
 		

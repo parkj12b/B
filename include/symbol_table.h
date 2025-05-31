@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:40:47 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/30 20:36:55 by root             ###   ########.fr       */
+/*   Updated: 2025/05/31 15:32:40 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,8 +23,7 @@ typedef enum
 	SYMBOL_LOCAL,
 	SYMBOL_GLOBAL,
 	SYMBOL_EXTRN,
-	// AUTO,
-	// EXTRN,
+	SYMBOL_FUNCTION,
 } symbol_storage_class_t;
 
 typedef enum
