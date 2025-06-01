@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:48:46 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/29 00:44:54 by root             ###   ########.fr       */
+/*   Updated: 2025/06/01 15:36:29 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,26 +44,38 @@ void ht_destroy_table_int(htable_t *table) {
 	free(table->entries);
 	free(table);
 }
-
-void ht_destroy_table_str(htable_t *table) {
-	for (int i = 0; i < table->capacity; i++)
-	{
-		if (table->entries[i].status == ACTIVE)
+#include <stdio.h>
+void ht_destroy_table_str(htable_t *table, int free_entries) {
+	if (free_entries) {
+		for (int i = 0; i < table->capacity; i++)
 		{
-			free((void *)table->entries[i].key);
-			free(table->entries[i].value);
+			if (table->entries[i].status == ACTIVE)
+			{
+				free((void *)table->entries[i].key);
+				free(table->entries[i].value);
+			}
+		}
+	} else {
+		for (int i = 0; i < table->capacity; i++)
+		{
+			if (table->entries[i].status == ACTIVE)
+			{
+				free((void *)table->entries[i].key);
+			}
 		}
 	}
 	free(table->entries);
 	free(table);
 }
 
-void ht_destroy_table(htable_t *table)
+void ht_destroy_table(htable_t *table, int free_entries)
 {
-	if (table->type == VALUE_INT)
-		ht_destroy_table_int(table);
+	if (table->type == VALUE_INT) {
+		if (!free_entries)
+			ht_destroy_table_int(table);
+	}
 	else
-		ht_destroy_table_str(table);
+		ht_destroy_table_str(table, free_entries);
 }
 
 // Return 64-bit FNV-1a hash for key (NUL-terminated). See description:

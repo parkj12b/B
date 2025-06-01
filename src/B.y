@@ -186,7 +186,7 @@ definition:
         if (entry == NULL) {
             ht_insert(function_table, $1, DECLARED);
         } else {
-            entry->status = DECLARED;
+            entry->value = DECLARED;
         }
 
         if ($3.kind == OPT_NONE) {
@@ -410,7 +410,7 @@ statement:
 
 simple_statement:
     GOTO expr SEMICOLON { //TODO: check if expr is a label and local
-        emit("jmp .%s", $2.identifier);
+        emit("jmp [.%s]", $2.identifier);
         free_expr(&$2);
     }
     | RETURN opt_paren_expr SEMICOLON {
@@ -420,6 +420,7 @@ simple_statement:
         } else {
             emit("mov eax, 0");
         }
+        emit ("jmp exit");
     }
     | opt_expr SEMICOLON {
         if ($1.kind != OPT_NONE) {
@@ -447,6 +448,7 @@ extrn:
 colon:
     IDENTIFIER COLON {
         /* labels are local */
+        emit("jmp [.%s]", $1);
         emit(".%s:", $1);
         emit(".long .%s + 4", $1);
         free($1);
@@ -472,9 +474,8 @@ if_expr:
 
 if_closed:
     if_expr closed_statement {
-        label_index--;
-        emit("jmp .LE%zu", label_stack[label_index]);
-        emit(".LF%zu:", label_stack[label_index]);
+        emit("jmp .LE%zu", label_stack[label_index - 1]);
+        emit(".LF%zu:", label_stack[label_index - 1]);
     }
 
 while_expr:
@@ -496,6 +497,7 @@ open_statement:
         emit(".LF%zu:", label_stack[label_index]);
     }
     | if_closed ELSE open_statement {
+        label_index--;
         emit(".LE%zu:", label_stack[label_index]);
     }
     | while_expr open_statement {
@@ -509,6 +511,7 @@ open_statement:
 closed_statement:
     simple_statement /* no action */
     | if_closed ELSE closed_statement {
+        label_index--;
         emit(".LE%zu:", label_stack[label_index]);
     }
     | while_expr closed_statement {
@@ -901,7 +904,7 @@ int main(int argc, char **argv) {
 
     // Clean up
     free_symbol_table(global_table);
-    ht_destroy_table(string_table);
-
+    ht_destroy_table(string_table, 1);
+    ht_destroy_table(function_table, 0);
     return result;
 }

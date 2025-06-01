@@ -630,14 +630,14 @@ static const yytype_int16 yyrline[] =
        0,   111,   111,   113,   122,   151,   181,   181,   238,   241,
      249,   257,   265,   268,   275,   285,   296,   301,   308,   311,
      319,   323,   329,   341,   356,   365,   377,   380,   387,   390,
-     397,   400,   407,   408,   412,   416,   424,   434,   441,   448,
-     457,   458,   459,   463,   474,   481,   481,   494,   498,   501,
-     506,   510,   511,   514,   519,   520,   524,   530,   535,   540,
-     545,   550,   555,   560,   565,   573,   576,   583,   593,   603,
-     608,   613,   617,   648,   651,   655,   664,   673,   687,   700,
-     709,   720,   728,   738,   748,   755,   748,   776,   779,   782,
-     785,   788,   791,   794,   797,   800,   803,   806,   809,   812,
-     815,   818
+     397,   400,   407,   408,   412,   416,   425,   435,   442,   449,
+     459,   460,   461,   465,   476,   482,   482,   495,   499,   503,
+     508,   512,   513,   517,   522,   523,   527,   533,   538,   543,
+     548,   553,   558,   563,   568,   576,   579,   586,   596,   606,
+     611,   616,   620,   651,   654,   658,   667,   676,   690,   703,
+     712,   723,   731,   741,   751,   758,   751,   779,   782,   785,
+     788,   791,   794,   797,   800,   803,   806,   809,   812,   815,
+     818,   821
 };
 #endif
 
@@ -1487,7 +1487,7 @@ yyreduce:
         if (entry == NULL) {
             ht_insert(function_table, (yyvsp[-2].sval), DECLARED);
         } else {
-            entry->status = DECLARED;
+            entry->value = DECLARED;
         }
 
         if ((yyvsp[0].opt).kind == OPT_NONE) {
@@ -1788,7 +1788,7 @@ yyreduce:
   case 34: /* simple_statement: GOTO expr SEMICOLON  */
 #line 412 "src/B.y"
                         { //TODO: check if expr is a label and local
-        emit("jmp .%s", (yyvsp[-1].expr).identifier);
+        emit("jmp [.%s]", (yyvsp[-1].expr).identifier);
         free_expr(&(yyvsp[-1].expr));
     }
 #line 1795 "B.tab.c"
@@ -1803,50 +1803,52 @@ yyreduce:
         } else {
             emit("mov eax, 0");
         }
+        emit ("jmp exit");
     }
-#line 1808 "B.tab.c"
+#line 1809 "B.tab.c"
     break;
 
   case 36: /* simple_statement: opt_expr SEMICOLON  */
-#line 424 "src/B.y"
+#line 425 "src/B.y"
                          {
         if ((yyvsp[-1].opt).kind != OPT_NONE) {
             expr_t *expr = &(yyvsp[-1].opt).value.expr;
             free_expr(&(yyvsp[-1].opt).value.expr);
         }
     }
-#line 1819 "B.tab.c"
+#line 1820 "B.tab.c"
     break;
 
   case 37: /* auto: AUTO var_decl_list SEMICOLON  */
-#line 434 "src/B.y"
+#line 435 "src/B.y"
                                  {
         add_auto_symb(&((yyvsp[-1].list)));
     }
-#line 1827 "B.tab.c"
+#line 1828 "B.tab.c"
     break;
 
   case 38: /* extrn: EXTRN ident_list SEMICOLON  */
-#line 441 "src/B.y"
+#line 442 "src/B.y"
                                {
         add_extrn_symbol(&((yyvsp[-1].list)));
     }
-#line 1835 "B.tab.c"
+#line 1836 "B.tab.c"
     break;
 
   case 39: /* colon: IDENTIFIER COLON  */
-#line 448 "src/B.y"
+#line 449 "src/B.y"
                      {
         /* labels are local */
+        emit("jmp [.%s]", (yyvsp[-1].sval));
         emit(".%s:", (yyvsp[-1].sval));
         emit(".long .%s + 4", (yyvsp[-1].sval));
         free((yyvsp[-1].sval));
     }
-#line 1846 "B.tab.c"
+#line 1848 "B.tab.c"
     break;
 
   case 43: /* if_expr: IF LPAREN expr RPAREN  */
-#line 463 "src/B.y"
+#line 465 "src/B.y"
                           {
         load_value_into_reg(&(yyvsp[-1].expr), "eax");
         emit("test eax, eax");
@@ -1855,30 +1857,29 @@ yyreduce:
         free_expr(&(yyvsp[-1].expr));
         increase_label();
     }
-#line 1859 "B.tab.c"
+#line 1861 "B.tab.c"
     break;
 
   case 44: /* if_closed: if_expr closed_statement  */
-#line 474 "src/B.y"
+#line 476 "src/B.y"
                              {
-        label_index--;
-        emit("jmp .LE%zu", label_stack[label_index]);
-        emit(".LF%zu:", label_stack[label_index]);
+        emit("jmp .LE%zu", label_stack[label_index - 1]);
+        emit(".LF%zu:", label_stack[label_index - 1]);
     }
-#line 1869 "B.tab.c"
+#line 1870 "B.tab.c"
     break;
 
   case 45: /* $@2: %empty  */
-#line 481 "src/B.y"
+#line 482 "src/B.y"
           {
         label_stack[label_index] = label_counter; 
         emit(".LS%zu:", label_stack[label_index]);
     }
-#line 1878 "B.tab.c"
+#line 1879 "B.tab.c"
     break;
 
   case 46: /* while_expr: WHILE $@2 LPAREN expr RPAREN  */
-#line 484 "src/B.y"
+#line 485 "src/B.y"
                          {
         load_value_into_reg(&(yyvsp[-1].expr), "eax");
         emit("test eax, eax");
@@ -1886,164 +1887,166 @@ yyreduce:
         increase_label();
         free_expr(&(yyvsp[-1].expr));
     }
-#line 1890 "B.tab.c"
+#line 1891 "B.tab.c"
     break;
 
   case 47: /* open_statement: if_expr statement  */
-#line 494 "src/B.y"
+#line 495 "src/B.y"
                       {
         label_index--;
         emit(".LF%zu:", label_stack[label_index]);
     }
-#line 1899 "B.tab.c"
+#line 1900 "B.tab.c"
     break;
 
   case 48: /* open_statement: if_closed ELSE open_statement  */
-#line 498 "src/B.y"
+#line 499 "src/B.y"
                                     {
+        label_index--;
         emit(".LE%zu:", label_stack[label_index]);
     }
-#line 1907 "B.tab.c"
+#line 1909 "B.tab.c"
     break;
 
   case 49: /* open_statement: while_expr open_statement  */
-#line 501 "src/B.y"
+#line 503 "src/B.y"
                                 {
         label_index--;
         emit("jmp .LS%zu", label_stack[label_index]);
         emit(".LF%zu:", label_stack[label_index]);
     }
-#line 1917 "B.tab.c"
+#line 1919 "B.tab.c"
     break;
 
   case 52: /* closed_statement: if_closed ELSE closed_statement  */
-#line 511 "src/B.y"
+#line 513 "src/B.y"
                                       {
+        label_index--;
         emit(".LE%zu:", label_stack[label_index]);
     }
-#line 1925 "B.tab.c"
+#line 1928 "B.tab.c"
     break;
 
   case 53: /* closed_statement: while_expr closed_statement  */
-#line 514 "src/B.y"
+#line 517 "src/B.y"
                                   {
         label_index--;
         emit("jmp .LS%zu", label_stack[label_index]);
         emit(".LF%zu:", label_stack[label_index]);
     }
-#line 1935 "B.tab.c"
+#line 1938 "B.tab.c"
     break;
 
   case 56: /* assign: expr ASSIGN expr  */
-#line 524 "src/B.y"
+#line 527 "src/B.y"
                                   {
         perform_assign(&(yyvsp[-2].expr), ASSIGN, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
 
     }
-#line 1946 "B.tab.c"
+#line 1949 "B.tab.c"
     break;
 
   case 57: /* assign: expr ASSIGN_OR expr  */
-#line 530 "src/B.y"
+#line 533 "src/B.y"
                                           {
         perform_assign(&(yyvsp[-2].expr), ASSIGN_OR, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
     }
-#line 1956 "B.tab.c"
+#line 1959 "B.tab.c"
     break;
 
   case 58: /* assign: expr ASSIGN_LSHIFT expr  */
-#line 535 "src/B.y"
+#line 538 "src/B.y"
                                                   {
         perform_assign(&(yyvsp[-2].expr), ASSIGN_LSHIFT, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
     }
-#line 1966 "B.tab.c"
+#line 1969 "B.tab.c"
     break;
 
   case 59: /* assign: expr ASSIGN_RSHIFT expr  */
-#line 540 "src/B.y"
+#line 543 "src/B.y"
                                                   {
         perform_assign(&(yyvsp[-2].expr), ASSIGN_RSHIFT, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
     }
-#line 1976 "B.tab.c"
+#line 1979 "B.tab.c"
     break;
 
   case 60: /* assign: expr ASSIGN_MINUS expr  */
-#line 545 "src/B.y"
+#line 548 "src/B.y"
                                                 {
         perform_assign(&(yyvsp[-2].expr), ASSIGN_MINUS, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
     }
-#line 1986 "B.tab.c"
+#line 1989 "B.tab.c"
     break;
 
   case 61: /* assign: expr ASSIGN_PLUS expr  */
-#line 550 "src/B.y"
+#line 553 "src/B.y"
                                               {
         perform_assign(&(yyvsp[-2].expr), ASSIGN_PLUS, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
     }
-#line 1996 "B.tab.c"
+#line 1999 "B.tab.c"
     break;
 
   case 62: /* assign: expr ASSIGN_MOD expr  */
-#line 555 "src/B.y"
+#line 558 "src/B.y"
                                             {
         perform_assign(&(yyvsp[-2].expr), ASSIGN_MOD, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
     }
-#line 2006 "B.tab.c"
+#line 2009 "B.tab.c"
     break;
 
   case 63: /* assign: expr ASSIGN_MUL expr  */
-#line 560 "src/B.y"
+#line 563 "src/B.y"
                                             {
         perform_assign(&(yyvsp[-2].expr), ASSIGN_MUL, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
     }
-#line 2016 "B.tab.c"
+#line 2019 "B.tab.c"
     break;
 
   case 64: /* assign: expr ASSIGN_DIVIDE expr  */
-#line 565 "src/B.y"
+#line 568 "src/B.y"
                                                   {
         perform_assign(&(yyvsp[-2].expr), ASSIGN_DIVIDE, &(yyvsp[0].expr));
         free_expr(&(yyvsp[0].expr));
         return_post_assign(&(yyval.expr), &(yyvsp[-2].expr));
     }
-#line 2026 "B.tab.c"
+#line 2029 "B.tab.c"
     break;
 
   case 65: /* opt_expr_list: %empty  */
-#line 573 "src/B.y"
+#line 576 "src/B.y"
                 {
         (yyval.opt).kind = OPT_NONE;
     }
-#line 2034 "B.tab.c"
+#line 2037 "B.tab.c"
     break;
 
   case 66: /* opt_expr_list: expr_list  */
-#line 576 "src/B.y"
+#line 579 "src/B.y"
                 {
         (yyval.opt).value.list = (yyvsp[0].list);
         (yyval.opt).kind = OPT_VALUE;
     }
-#line 2043 "B.tab.c"
+#line 2046 "B.tab.c"
     break;
 
   case 67: /* expr_list: expr  */
-#line 583 "src/B.y"
+#line 586 "src/B.y"
          {
         expr_t *expr = (expr_t *)xmalloc(sizeof(expr_t));
         memcpy(expr, &(yyvsp[0].expr), sizeof(expr_t));
@@ -2054,11 +2057,11 @@ yyreduce:
         (yyval.list).tail = NULL;
         add_node(&((yyval.list)), node);
     }
-#line 2058 "B.tab.c"
+#line 2061 "B.tab.c"
     break;
 
   case 68: /* expr_list: expr_list COMMA expr  */
-#line 593 "src/B.y"
+#line 596 "src/B.y"
                            {
         expr_t *expr = (expr_t *)xmalloc(sizeof(expr_t));
         memcpy(expr, &(yyvsp[0].expr), sizeof(expr_t));
@@ -2066,39 +2069,39 @@ yyreduce:
         add_node(&((yyvsp[-2].list)), node);
         (yyval.list) = (yyvsp[-2].list);
     }
-#line 2070 "B.tab.c"
+#line 2073 "B.tab.c"
     break;
 
   case 69: /* expr: constant  */
-#line 603 "src/B.y"
+#line 606 "src/B.y"
              {
         (yyval.expr).type = EXPR_CONST;
         (yyval.expr).val_kind = EXPR_RVALUE;
         (yyval.expr).constant = (yyvsp[0].constant);
     }
-#line 2080 "B.tab.c"
+#line 2083 "B.tab.c"
     break;
 
   case 70: /* expr: IDENTIFIER  */
-#line 608 "src/B.y"
+#line 611 "src/B.y"
                  {
         (yyval.expr).val_kind = EXPR_LVALUE;
         (yyval.expr).type = EXPR_VAL;
         (yyval.expr).identifier = (yyvsp[0].sval);
     }
-#line 2090 "B.tab.c"
+#line 2093 "B.tab.c"
     break;
 
   case 71: /* expr: LPAREN expr RPAREN  */
-#line 613 "src/B.y"
+#line 616 "src/B.y"
                                       {
         (yyval.expr) = (yyvsp[-1].expr);
     }
-#line 2098 "B.tab.c"
+#line 2101 "B.tab.c"
     break;
 
   case 72: /* expr: expr LPAREN opt_expr_list RPAREN  */
-#line 617 "src/B.y"
+#line 620 "src/B.y"
                                        {
         if ((yyvsp[-3].expr).val_kind != EXPR_LVALUE) {
             yyerror("LHS of function call must be a Lvalue");
@@ -2130,28 +2133,28 @@ yyreduce:
         add_temp_symbol(&(yyval.expr));
         register_to_lvalue(&(yyval.expr), "eax");
     }
-#line 2134 "B.tab.c"
+#line 2137 "B.tab.c"
     break;
 
   case 73: /* expr: assign  */
-#line 648 "src/B.y"
+#line 651 "src/B.y"
              {
         (yyval.expr) = (yyvsp[0].expr);
     }
-#line 2142 "B.tab.c"
+#line 2145 "B.tab.c"
     break;
 
   case 74: /* expr: binary  */
-#line 651 "src/B.y"
+#line 654 "src/B.y"
              {
         (yyval.expr) = (yyvsp[0].expr);
         (yyval.expr).type == EXPR_VAL;
     }
-#line 2151 "B.tab.c"
+#line 2154 "B.tab.c"
     break;
 
   case 75: /* expr: INC expr  */
-#line 655 "src/B.y"
+#line 658 "src/B.y"
                          {
         if ((yyvsp[0].expr).val_kind != EXPR_LVALUE) {
             yyerror("LHS of increment must be a Lvalue");
@@ -2161,11 +2164,11 @@ yyreduce:
         (yyval.expr).type = EXPR_VAL;
         (yyval.expr).val_kind = EXPR_RVALUE;
     }
-#line 2165 "B.tab.c"
+#line 2168 "B.tab.c"
     break;
 
   case 76: /* expr: DEC expr  */
-#line 664 "src/B.y"
+#line 667 "src/B.y"
                          {
         if ((yyvsp[0].expr).val_kind != EXPR_LVALUE) {
             yyerror("LHS of decrement must be a Lvalue");
@@ -2175,11 +2178,11 @@ yyreduce:
         (yyval.expr).type = EXPR_VAL;
         (yyval.expr).val_kind = EXPR_RVALUE;
     }
-#line 2179 "B.tab.c"
+#line 2182 "B.tab.c"
     break;
 
   case 77: /* expr: expr INC  */
-#line 673 "src/B.y"
+#line 676 "src/B.y"
                {
         if ((yyvsp[-1].expr).val_kind != EXPR_LVALUE) {
             yyerror("LHS of increment must be a Lvalue");
@@ -2194,11 +2197,11 @@ yyreduce:
         (yyval.expr).type = EXPR_VAL;
         register_to_lvalue(&(yyval.expr), "ecx");
     }
-#line 2198 "B.tab.c"
+#line 2201 "B.tab.c"
     break;
 
   case 78: /* expr: expr DEC  */
-#line 687 "src/B.y"
+#line 690 "src/B.y"
                {
         if ((yyvsp[-1].expr).val_kind != EXPR_LVALUE) {
             yyerror("LHS of decrement must be a Lvalue");
@@ -2212,11 +2215,11 @@ yyreduce:
         (yyval.expr).type = EXPR_VAL;
         register_to_lvalue(&(yyval.expr), "ecx");
     }
-#line 2216 "B.tab.c"
+#line 2219 "B.tab.c"
     break;
 
   case 79: /* expr: MINUS expr  */
-#line 700 "src/B.y"
+#line 703 "src/B.y"
                              {
         load_value_into_reg(&(yyvsp[0].expr), "eax");
         free_expr(&(yyvsp[0].expr));
@@ -2226,11 +2229,11 @@ yyreduce:
         add_temp_symbol(&(yyval.expr));
         register_to_lvalue(&(yyval.expr), "eax");
     }
-#line 2230 "B.tab.c"
+#line 2233 "B.tab.c"
     break;
 
   case 80: /* expr: NOT expr  */
-#line 709 "src/B.y"
+#line 712 "src/B.y"
                            {
         load_value_into_reg(&(yyvsp[0].expr), "eax");
         free_expr(&(yyvsp[0].expr));
@@ -2242,11 +2245,11 @@ yyreduce:
         add_temp_symbol(&(yyval.expr));
         register_to_lvalue(&(yyval.expr), "eax");
     }
-#line 2246 "B.tab.c"
+#line 2249 "B.tab.c"
     break;
 
   case 81: /* expr: STAR expr  */
-#line 720 "src/B.y"
+#line 723 "src/B.y"
                             {
         load_value_into_reg(&(yyvsp[0].expr), "eax");
         free_expr(&(yyvsp[0].expr));
@@ -2255,11 +2258,11 @@ yyreduce:
         (yyval.expr).val_kind = EXPR_LVALUE;
         load_value_reg_to_lvalue(&(yyval.expr), "eax");
     }
-#line 2259 "B.tab.c"
+#line 2262 "B.tab.c"
     break;
 
   case 82: /* expr: AMPERSAND expr  */
-#line 728 "src/B.y"
+#line 731 "src/B.y"
                                    {
         if ((yyvsp[0].expr).val_kind == EXPR_RVALUE)
             yyerror("L-Value required for taking the address of.");
@@ -2270,11 +2273,11 @@ yyreduce:
         add_temp_symbol(&(yyval.expr));
         register_to_lvalue(&(yyval.expr), "eax");
     }
-#line 2274 "B.tab.c"
+#line 2277 "B.tab.c"
     break;
 
   case 83: /* expr: expr LBRACKET expr RBRACKET  */
-#line 738 "src/B.y"
+#line 741 "src/B.y"
                                   { //TODO: decide what to do with vector_access. EXPR_LVALUE
         vector_access(&(yyvsp[-3].expr), &(yyvsp[-1].expr));
         emit("imul ebx, 4");
@@ -2285,11 +2288,11 @@ yyreduce:
         (yyval.expr).storage_kind = EXPR_TEMP;
         load_value_reg_to_lvalue(&(yyval.expr), "ebx");
     }
-#line 2289 "B.tab.c"
+#line 2292 "B.tab.c"
     break;
 
   case 84: /* @3: %empty  */
-#line 748 "src/B.y"
+#line 751 "src/B.y"
                     {
         load_value_into_reg(&(yyvsp[-1].expr), "eax");
         free_expr(&(yyvsp[-1].expr));
@@ -2298,11 +2301,11 @@ yyreduce:
         emit("test eax, eax");
         emit("jz .LF%zu", label_counter);
     }
-#line 2302 "B.tab.c"
+#line 2305 "B.tab.c"
     break;
 
   case 85: /* @4: %empty  */
-#line 755 "src/B.y"
+#line 758 "src/B.y"
                  {
         load_value_into_reg(&(yyvsp[-1].expr), "eax");
         free_expr(&(yyvsp[-1].expr));
@@ -2311,11 +2314,11 @@ yyreduce:
         emit("jmp .LE%zu", label_counter);
         emit(".LF%zu:", label_counter);
     }
-#line 2315 "B.tab.c"
+#line 2318 "B.tab.c"
     break;
 
   case 86: /* expr: expr QUESTION @3 expr COLON @4 expr  */
-#line 762 "src/B.y"
+#line 765 "src/B.y"
                          {
         (yyval.expr).type = EXPR_VAL;
         (yyval.expr).storage_kind = EXPR_TEMP;
@@ -2327,131 +2330,131 @@ yyreduce:
         (yyval.expr).type = EXPR_VAL;
         label_counter++;
     }
-#line 2331 "B.tab.c"
+#line 2334 "B.tab.c"
     break;
 
   case 87: /* binary: expr OR expr  */
-#line 776 "src/B.y"
+#line 779 "src/B.y"
                           {
         binary_op(&(yyvsp[-2].expr), OR, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2339 "B.tab.c"
+#line 2342 "B.tab.c"
     break;
 
   case 88: /* binary: expr STAR expr  */
-#line 779 "src/B.y"
+#line 782 "src/B.y"
                                 {
         binary_op(&(yyvsp[-2].expr), STAR, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2347 "B.tab.c"
+#line 2350 "B.tab.c"
     break;
 
   case 89: /* binary: expr AMPERSAND expr  */
-#line 782 "src/B.y"
+#line 785 "src/B.y"
                                           {
         binary_op(&(yyvsp[-2].expr), AMPERSAND, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2355 "B.tab.c"
+#line 2358 "B.tab.c"
     break;
 
   case 90: /* binary: expr EQ expr  */
-#line 785 "src/B.y"
+#line 788 "src/B.y"
                             {
         binary_op(&(yyvsp[-2].expr), EQ, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2363 "B.tab.c"
+#line 2366 "B.tab.c"
     break;
 
   case 91: /* binary: expr NEQ expr  */
-#line 788 "src/B.y"
+#line 791 "src/B.y"
                               {
         binary_op(&(yyvsp[-2].expr), NEQ, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2371 "B.tab.c"
+#line 2374 "B.tab.c"
     break;
 
   case 92: /* binary: expr LT expr  */
-#line 791 "src/B.y"
+#line 794 "src/B.y"
                             {
         binary_op(&(yyvsp[-2].expr), LT, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2379 "B.tab.c"
+#line 2382 "B.tab.c"
     break;
 
   case 93: /* binary: expr LE expr  */
-#line 794 "src/B.y"
+#line 797 "src/B.y"
                             {
         binary_op(&(yyvsp[-2].expr), LE, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2387 "B.tab.c"
+#line 2390 "B.tab.c"
     break;
 
   case 94: /* binary: expr GT expr  */
-#line 797 "src/B.y"
+#line 800 "src/B.y"
                             {
         binary_op(&(yyvsp[-2].expr), GT, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2395 "B.tab.c"
+#line 2398 "B.tab.c"
     break;
 
   case 95: /* binary: expr GE expr  */
-#line 800 "src/B.y"
+#line 803 "src/B.y"
                             {
         binary_op(&(yyvsp[-2].expr), GE, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2403 "B.tab.c"
+#line 2406 "B.tab.c"
     break;
 
   case 96: /* binary: expr LSHIFT expr  */
-#line 803 "src/B.y"
+#line 806 "src/B.y"
                                     {
         binary_op(&(yyvsp[-2].expr), LSHIFT, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2411 "B.tab.c"
+#line 2414 "B.tab.c"
     break;
 
   case 97: /* binary: expr RSHIFT expr  */
-#line 806 "src/B.y"
+#line 809 "src/B.y"
                                     {
         binary_op(&(yyvsp[-2].expr), RSHIFT, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2419 "B.tab.c"
+#line 2422 "B.tab.c"
     break;
 
   case 98: /* binary: expr MINUS expr  */
-#line 809 "src/B.y"
+#line 812 "src/B.y"
                                   {
         binary_op(&(yyvsp[-2].expr), MINUS, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2427 "B.tab.c"
+#line 2430 "B.tab.c"
     break;
 
   case 99: /* binary: expr PLUS expr  */
-#line 812 "src/B.y"
+#line 815 "src/B.y"
                                 {
         binary_op(&(yyvsp[-2].expr), PLUS, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2435 "B.tab.c"
+#line 2438 "B.tab.c"
     break;
 
   case 100: /* binary: expr MOD expr  */
-#line 815 "src/B.y"
+#line 818 "src/B.y"
                               { // TODO
         binary_op(&(yyvsp[-2].expr), MOD, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2443 "B.tab.c"
+#line 2446 "B.tab.c"
     break;
 
   case 101: /* binary: expr SLASH expr  */
-#line 818 "src/B.y"
+#line 821 "src/B.y"
                                   {
         binary_op(&(yyvsp[-2].expr), SLASH, &(yyvsp[0].expr), &(yyval.expr));
     }
-#line 2451 "B.tab.c"
+#line 2454 "B.tab.c"
     break;
 
 
-#line 2455 "B.tab.c"
+#line 2458 "B.tab.c"
 
       default: break;
     }
@@ -2644,7 +2647,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 823 "src/B.y"
+#line 826 "src/B.y"
 
 // yyerror function
 void yyerror(const char *msg) {
@@ -2726,7 +2729,7 @@ int main(int argc, char **argv) {
 
     // Clean up
     free_symbol_table(global_table);
-    ht_destroy_table(string_table);
-
+    ht_destroy_table(string_table, 1);
+    ht_destroy_table(function_table, 0);
     return result;
 }

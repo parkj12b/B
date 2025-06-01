@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/29 22:26:22 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/29 00:59:38 by root             ###   ########.fr       */
+/*   Updated: 2025/06/01 15:24:43 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ htable_t *ht_create_table(htable_type_t type);
  * * @brief Destroy the hash table and free all memory.
  * * @param table The hash table to destroy.
  */
-void ht_destroy_table(htable_t *table);
+void ht_destroy_table(htable_t *table, int free_entries);
 
 /**
  * * @brief 	Insert a key-value pair into the hash table.

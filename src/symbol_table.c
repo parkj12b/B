@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/05/31 15:33:45 by root             ###   ########.fr       */
+/*   Updated: 2025/06/01 15:27:21 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,7 +111,7 @@ void print_symbol_table(symbol_table_t *s_table)
 
 void free_symbol_table(symbol_table_t *s_table)
 {
-	ht_destroy_table(s_table->table);
+	ht_destroy_table(s_table->table, 1);
 	free(s_table);
 }
 
