@@ -84,12 +84,12 @@ char *str_to_assembly_str(const char *str);
 ":"         { return COLON; }
 "?"         { return QUESTION; }
 
-[0-9]* {
+-?[0-9]* {
     yylval.ival = atoi(yytext);
     return NUMBER;
 }
 
-[a-zA-Z_][a-zA-Z0-9_]{0,7} {
+[a-zA-Z_][a-zA-Z0-9_]{0,31} {
     yylval.sval = strdup(yytext);
     return IDENTIFIER;
 }

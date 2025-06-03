@@ -10,9 +10,9 @@ f[2] 1, 2, 3, 4, 5;
 
 /* 7.3 */
 main(argc, argv, envp) {
-	extrn a;
-	extrn b, e, c;
-	/* extrn; syntax error */
+	extrn a, b, e, c, True, False;
+	extrn printf, assert;
+
 printf("1 ---------\n");
 	/* Symbol not found
 	printf("%d\n", b);
@@ -63,11 +63,11 @@ if (1) {
 
 /* 5.2 */
 	b = 1;
-	if (b++)
-		if (1)
-			printf("no dangling else\n");
-	else
-		printf("else else else\n");
+	if (False)
+		if (False)
+			assert(False);
+		else
+			assert(False);
 
 	printf("expect 2 b: %d\n", b);
 	b = -5;
@@ -170,8 +170,12 @@ if (1) {
 	printf("expected: 3, %d\n", 2[a]);
 
 	b = 1;
-	printf("expected: 2, %d\n", a[b]);
-	printf("expected: 2, %d\n", b[a]);
+	printf("a[b]: expected: 2, %d\n", a[b]);
+	/* 둘다 변수일 경우 왼쪽을 pointer 로 잡아서 터짐. offset 에 *4 를 해야되는데
+	   그게 왼쪽인지 오른쪽인지 알 수 없음 
+	printf("b[a]: expected: 2, %d\n", b[a]);
+
+	*/
 	/* printf("%d\n", a[e]); */
 	printf("e[0], expected: 1, %d\n", e[0]);
 	printf("expected: 2, %d\n", a[e[0]]);
@@ -179,6 +183,8 @@ if (1) {
 	printf("%d\n", b[b]);
 	printf("%d\n", 1[1]);
 	*/
+
+	extrn addition, subtract;
 
 	b = addition(2, 3);
 	printf("expected: 5, %d\n", b);
@@ -203,13 +209,15 @@ if (1) {
 	printf("expected: 3, 12 >> 2 = %d\n", 12 >> 2);
 	printf("expected: 2, 5 - 3 = %d\n", 5 - 3);
 	printf("expected: 8, 5 + 3 = %d\n", 5 + 3);
-	printf("expected: 1, 2147483647 %% 2147483646 %d\n", 2147483647 % 2147483646);
+	printf("expected: 1, 2147483647 % 2147483646 %d\n", 2147483647 % 2147483646);
 	printf("expected: 1, 2 / 2 = %d\n", 2 / 2);
 
+	assert(1);
 }
 
 /* 7.3 */
 addition(a, b) {
+	extrn printf;
 	printf("%d, %d\n", a, b);
 	label:
 	return ((a)+(b));

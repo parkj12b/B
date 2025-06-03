@@ -74,7 +74,7 @@ int temp_depth = 0;
 %token ASSIGN
 
 %token INC DEC
-%token OR EQ NEQ LT LE GT GE LSHIFT RSHIFT STAR SLASH MOD PLUS MINUS
+%token OR EQ NEQ LT LE GT GE LSHIFT RSHIFT STAR SLASH MOD PLUS MINUS //TODO: negative
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token SEMICOLON COMMA COLON QUESTION
 %token AMPERSAND
@@ -195,7 +195,7 @@ definition:
             symbol->size = $3.value.list.size;
         }
         symbol->type = SYMBOL_FUNCTION;
-        add_symbol($1, symbol);
+        add_symbol_table(global_table, $1, symbol);
         emit("%s:", $1);
         emit(".long %s + 4", $1);
         emit("push ebp");
@@ -218,7 +218,7 @@ definition:
     } RPAREN statement {
         emit("pop ebx");
         pop_register();
-        emit("jmp exit\n");
+        emit("jmp _exit\n");
 
         /* jump reserve */
 
@@ -420,7 +420,7 @@ simple_statement:
         } else {
             emit("mov eax, 0");
         }
-        emit ("jmp exit");
+        emit ("jmp _exit");
     }
     | opt_expr SEMICOLON {
         if ($1.kind != OPT_NONE) {
@@ -431,6 +431,7 @@ simple_statement:
     ;
 
 /* 6.2 Automatic declaration */
+// TODO: change constant size to initialization
 auto:
     AUTO var_decl_list SEMICOLON {
         add_auto_symb(&($2));
@@ -451,6 +452,7 @@ colon:
         emit("jmp [.%s]", $1);
         emit(".%s:", $1);
         emit(".long .%s + 4", $1);
+        add_symbol($1, NULL);
         free($1);
     }
     ;
@@ -618,22 +620,23 @@ expr:
     }
     /* function call */
     | expr LPAREN opt_expr_list RPAREN {
-        if ($1.val_kind != EXPR_LVALUE) {
-            yyerror("LHS of function call must be a Lvalue");
-        }
-        /* check if function exist */
+
+         /* check if function exist */
         entry_t *entry = ht_search(function_table, $1.identifier, 1);
         if (entry == NULL) {
             ht_insert(function_table, $1.identifier, (void *)REFERENCED);
+        }
+
+        if ($1.val_kind != EXPR_LVALUE) {
+            yyerror("LHS of function call must be a Lvalue");
         }
 
         if ($3.kind != OPT_NONE) {
             function_call(&($3.value.list));
         }
         if ($1.val_kind == EXPR_LVALUE) {
-            symbol_t *symbol = get_symbol($1.identifier);
-
-            emit("call [%s]\n", $1.identifier);
+            load_value_into_reg(&$1, "eax");
+            emit("call eax\n");
         } else {
             emit("call %zu\n", $1.value); //TODO: fix it so function ptr can work
         }

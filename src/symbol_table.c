@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 21:55:09 by minsepar          #+#    #+#             */
-/*   Updated: 2025/06/01 15:27:21 by root             ###   ########.fr       */
+/*   Updated: 2025/06/03 22:27:14 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,8 +97,13 @@ void *get_symbol_table(symbol_table_t *table, char *name)
 void *get_symbol(char *name)
 {
 	symbol_t	*symb = get_symbol_table(current_table, name);
-	if (!symb)
-		yyerror("No such symbol found\n");
+	if (!symb) {
+		symb = get_symbol_table(global_table, name);
+		if (!symb) {
+			printf("Symbol '%s' not found\n", name);
+			yyerror("Symbol not found");
+		}
+	}
 	return symb;
 }
 

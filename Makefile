@@ -1,5 +1,4 @@
 
-
 NAME=B
 
 LIBFT = libft/libft.a

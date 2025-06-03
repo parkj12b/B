@@ -7,14 +7,13 @@
 
 
 main() {
-	extrn putchar, n, v;
+	extrn putchar, n, v, printf;
 	auto i, c, col, a;
 
 	i = col = 0;
-	printf("n: %d\n");
+	printf("n: %d\n", n);
 	while(i < n) {
 		v[i++] = 1;
-		printf("%d\n", i);
 	}
 	while(col < 2 * n) {
 		a = n + 1;

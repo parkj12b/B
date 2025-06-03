@@ -6,7 +6,7 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/05 23:31:25 by minsepar          #+#    #+#             */
-/*   Updated: 2025/06/01 17:01:48 by root             ###   ########.fr       */
+/*   Updated: 2025/06/03 19:27:51 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ void init_assembly(void)
 
 void exit_label(void)
 {
-	emit("exit:");
+	emit("_exit:");
 	emit("leave");
 	emit("ret");
 	oprintf("\n");
@@ -75,6 +75,9 @@ void emit_extern(void)
 		if (symbol->type == EXTRN)
 		{
 			oprintf(".extern %s\n", gtable->entries[i].key);
+		} else if (symbol->type == SYMBOL_GLOBAL)
+		{
+			oprintf(".globl %s\n", gtable->entries[i].key);
 		}
 	}
 }

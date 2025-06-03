@@ -10,505 +10,241 @@ push ebx
 jmp 1f
 2:
 
+mov eax, 0
+mov [ebp -12], eax
+
+mov eax, [ebp -12]
+mov [ebp -20], eax
+mov eax, [ebp -20]
+mov [ebp -4], eax
+
+mov eax, [ebp -4]
+mov [ebp -20], eax
+push dword ptr [n]
 lea eax, s_0
-mov [ebp -4], eax
-
-mov eax, [ebp -4]
-mov [ebp -8], eax
-push dword ptr [ebp -4]
-call [printf]
-
-add esp, 4
-
-mov [ebp -8], eax
-mov eax, 37
-mov ecx, 37
-cmp eax, ecx
-sete al
-movzx eax, al
-mov [ebp -8], eax
-
-mov eax, [ebp -8]
-test eax, eax
-jz .LF0
-lea eax, s_1
 push eax
-call [printf]
-
-add esp, 4
-
-mov [ebp -8], eax
-.LF0:
-push dword ptr 25
-lea eax, s_2
-push eax
-call [printf]
+mov eax, dword ptr [printf]
+call eax
 
 add esp, 8
 
-mov [ebp -8], eax
-lea eax, s_4
-push eax
-lea eax, s_3
-push eax
-call [printf]
-
-add esp, 8
-
-mov [ebp -8], eax
-mov eax, 0
-jmp exit
-pop ebx
-jmp exit
-
-1:
-sub esp, 8
-jmp 2b
-
-printf:
-.long printf + 4
-push ebp
-mov ebp, esp
-
-push ebx
-jmp 1f
-2:
-
-mov eax, 0
-mov [ebp -16], eax
-
-mov eax, [ebp -16]
-mov [ebp -24], eax
-lea eax, [ebp +12]
-mov [ebp -24], eax
-mov eax, [ebp -24]
-mov [ebp -4], eax
-
+mov [ebp -20], eax
+.LS0:
 mov eax, [ebp -4]
-mov [ebp -24], eax
-jmp [.loop]
-.loop:
-.long .loop + 4
-.LS1:
-mov eax, [ebp -16]
-mov ecx, eax
-mov eax, [ebp -16]
-inc eax
-mov [ebp -16], eax
-mov [ebp -24], ecx
-push dword ptr [ebp -24]
-push dword ptr [ebp +8]
-call [char]
-
-add esp, 8
-
-mov [ebp -24], eax
-mov eax, [ebp -24]
-mov [ebp -12], eax
-
-mov eax, [ebp -12]
-mov [ebp -24], eax
-mov eax, [ebp -24]
-mov ecx, 37
-cmp eax, ecx
-setne al
-movzx eax, al
-mov [ebp -24], eax
-
-mov eax, [ebp -24]
-test eax, eax
-jz .LF1
-mov eax, [ebp -12]
-mov ecx, 0
-cmp eax, ecx
-sete al
-movzx eax, al
-mov [ebp -24], eax
-
-mov eax, [ebp -24]
-test eax, eax
-jz .LF2
-mov eax, 0
-jmp exit
-.LF2:
-push dword ptr [ebp -12]
-call [putchar]
-
-add esp, 4
-
-mov [ebp -24], eax
-jmp .LS1
-.LF1:
-mov eax, [ebp -4]
-mov ecx, eax
-mov eax, [ebp -4]
-inc eax
-mov [ebp -4], eax
-mov [ebp -24], ecx
-mov eax, [ebp -24]
-mov [ebp -24], eax
-mov eax, [ebp -24]
-mov eax, [eax]
-mov [ebp -8], eax
-
-mov eax, [ebp -8]
-mov [ebp -24], eax
-mov eax, [ebp -16]
-mov ecx, eax
-mov eax, [ebp -16]
-inc eax
-mov [ebp -16], eax
-mov [ebp -24], ecx
-push dword ptr [ebp -24]
-push dword ptr [ebp +8]
-call [char]
-
-add esp, 8
-
-mov [ebp -24], eax
-mov eax, [ebp -24]
-mov [ebp -12], eax
-
-mov eax, [ebp -12]
-mov [ebp -24], eax
-mov eax, [ebp -12]
-mov ecx, 100
-cmp eax, ecx
-sete al
-movzx eax, al
-mov [ebp -24], eax
-
-mov eax, [ebp -24]
-test eax, eax
-jz .LF3
-mov eax, [ebp -8]
-mov ecx, 0
+mov ecx, dword ptr [n]
 cmp eax, ecx
 setl al
 movzx eax, al
-mov [ebp -24], eax
+mov [ebp -20], eax
 
-mov eax, [ebp -24]
+mov eax, [ebp -20]
 test eax, eax
-jz .LF4
-mov eax, [ebp -8]
-neg eax
-mov [ebp -24], eax
-mov eax, [ebp -24]
+jz .LF0
+mov eax, [ebp -4]
+mov ecx, eax
+mov eax, [ebp -4]
+inc eax
+mov [ebp -4], eax
+mov [ebp -20], ecx
+mov eax, dword ptr [v]
+mov ebx, [ebp -20]
+imul ebx, 4
+add ebx, eax
+mov [ebp -20], ebx
+mov eax, 1
+mov ebx, [ebp -20]
+mov [ebx], eax
+
+mov eax, [ebp -20]
+mov eax, [eax]
+mov [ebp -20], eax
+jmp .LS0
+.LF0:
+.LS1:
+mov eax, 2
+mov ecx, dword ptr [n]
+imul eax, ecx
+mov [ebp -20], eax
+
+mov eax, [ebp -12]
+mov ecx, [ebp -20]
+cmp eax, ecx
+setl al
+movzx eax, al
+mov [ebp -20], eax
+
+mov eax, [ebp -20]
+test eax, eax
+jz .LF1
+mov eax, dword ptr [n]
+mov ecx, 1
+add eax, ecx
+mov [ebp -20], eax
+
+mov eax, [ebp -20]
+mov [ebp -16], eax
+
+mov eax, [ebp -16]
+mov [ebp -20], eax
+mov eax, 0
+mov [ebp -4], eax
+
+mov eax, [ebp -4]
+mov [ebp -20], eax
+mov eax, [ebp -20]
 mov [ebp -8], eax
 
 mov eax, [ebp -8]
-mov [ebp -24], eax
-push dword ptr 45
-call [putchar]
-
-add esp, 4
-
-mov [ebp -24], eax
-.LF4:
-mov eax, [ebp -12]
-mov ecx, 111
+mov [ebp -20], eax
+.LS2:
+mov eax, [ebp -4]
+mov ecx, dword ptr [n]
 cmp eax, ecx
-sete al
+setl al
 movzx eax, al
-mov [ebp -24], eax
-
-mov eax, [ebp -24]
-test eax, eax
-jz .LF5
-mov eax, 8
-mov [ebp -24], eax
-jmp .LE5
-.LF5:
-mov eax, 10
-mov [ebp -24], eax
-.LE5:
-push dword ptr [ebp -24]
-push dword ptr [ebp -8]
-call [printn]
-
-add esp, 8
-
-mov [ebp -24], eax
-jmp [.loop]
-jmp .LE3
-.LF3:
-mov eax, [ebp -12]
-mov ecx, 99
-cmp eax, ecx
-sete al
-movzx eax, al
-mov [ebp -24], eax
-
-mov eax, [ebp -24]
-test eax, eax
-jz .LF6
-push dword ptr [ebp -8]
-call [putchar]
-
-add esp, 4
-
-mov [ebp -24], eax
-jmp [.loop]
-jmp .LE6
-.LF6:
-mov eax, [ebp -12]
-mov ecx, 115
-cmp eax, ecx
-sete al
-movzx eax, al
-mov [ebp -24], eax
-
-mov eax, [ebp -24]
-test eax, eax
-jz .LF7
-mov eax, 0
 mov [ebp -20], eax
 
 mov eax, [ebp -20]
-mov [ebp -24], eax
-.LS8:
+test eax, eax
+jz .LF2
+mov eax, dword ptr [v]
+mov ebx, [ebp -4]
+imul ebx, 4
+add ebx, eax
+mov [ebp -20], ebx
 mov eax, [ebp -20]
+mov eax, [eax]
+mov ecx, 10
+imul eax, ecx
+mov [ebp -20], eax
+
+mov eax, [ebp -8]
+mov ecx, [ebp -20]
+add eax, ecx
+mov [ebp -8], eax
+
+mov eax, [ebp -8]
+mov [ebp -20], eax
+mov eax, [ebp -4]
 mov ecx, eax
-mov eax, [ebp -20]
+mov eax, [ebp -4]
 inc eax
+mov [ebp -4], eax
+mov [ebp -20], ecx
+mov eax, dword ptr [v]
+mov ebx, [ebp -20]
+imul ebx, 4
+add ebx, eax
+mov [ebp -20], ebx
+mov eax, [ebp -8]
+mov ecx, [ebp -16]
+xor edx, edx
+idiv ecx
+mov eax, edx
+mov [ebp -24], eax
+
+mov eax, [ebp -24]
+mov ebx, [ebp -20]
+mov [ebx], eax
+
+mov eax, [ebp -20]
+mov eax, [eax]
 mov [ebp -20], eax
-mov [ebp -24], ecx
-push dword ptr [ebp -24]
-push dword ptr [ebp -8]
-call [char]
-
-add esp, 8
-
-mov [ebp -24], eax
-mov eax, [ebp -24]
-mov [ebp -12], eax
-
-mov eax, [ebp -12]
-mov [ebp -24], eax
-mov eax, [ebp -24]
-mov ecx, 0
-cmp eax, ecx
-setne al
-movzx eax, al
-mov [ebp -24], eax
-
-mov eax, [ebp -24]
-test eax, eax
-jz .LF8
-push dword ptr [ebp -12]
-call [putchar]
-
-add esp, 4
-
-mov [ebp -24], eax
-jmp .LS8
-.LF8:
-jmp [.loop]
-.LF7:
-.LE6:
-.LE3:
-push dword ptr 37
-call [putchar]
-
-add esp, 4
-
-mov [ebp -24], eax
 mov eax, [ebp -16]
 mov ecx, eax
 mov eax, [ebp -16]
 dec eax
 mov [ebp -16], eax
-mov [ebp -24], ecx
-mov eax, [ebp -4]
-mov ecx, eax
-mov eax, [ebp -4]
-dec eax
-mov [ebp -4], eax
-mov [ebp -24], ecx
-jmp [.loop]
+mov [ebp -20], ecx
+mov eax, [ebp -8]
+mov ecx, [ebp -20]
+xor edx, edx
+idiv ecx
+mov [ebp -8], eax
+
+mov eax, [ebp -8]
+mov [ebp -20], eax
+jmp .LS2
+.LF2:
+mov eax, [ebp -8]
+mov ecx, 48
+add eax, ecx
+mov [ebp -20], eax
+
+push dword ptr [ebp -20]
+mov eax, dword ptr [putchar]
+call eax
+
+add esp, 4
+
+mov [ebp -20], eax
+mov eax, [ebp -12]
+inc eax
+mov [ebp -12], eax
+mov eax, [ebp -12]
+mov ecx, 5
+xor edx, edx
+idiv ecx
+mov eax, edx
+mov [ebp -20], eax
+
+mov eax, [ebp -20]
+test eax, eax
+setz al
+movzx eax, al
+mov [ebp -20], eax
+mov eax, [ebp -20]
+test eax, eax
+jz .LF3
+mov eax, [ebp -12]
+mov ecx, 50
+xor edx, edx
+idiv ecx
+mov eax, edx
+mov [ebp -20], eax
+
+mov eax, [ebp -20]
+test eax, eax
+jz .LF4
+mov eax, 32
+mov [ebp -20], eax
+jmp .LE4
+.LF4:
+mov eax, 10
+mov [ebp -20], eax
+.LE4:
+push dword ptr [ebp -20]
+mov eax, dword ptr [putchar]
+call eax
+
+add esp, 4
+
+mov [ebp -20], eax
+.LF3:
+jmp .LS1
+.LF1:
 pop ebx
-jmp exit
+jmp _exit
 
 1:
 sub esp, 24
 jmp 2b
 
-printn:
-.long printn + 4
-push ebp
-mov ebp, esp
-
-push ebx
-jmp 1f
-2:
-
-mov eax, [ebp +8]
-mov ecx, [ebp +12]
-xor edx, edx
-idiv ecx
-mov [ebp -8], eax
-
-mov eax, [ebp -8]
-mov [ebp -4], eax
-
-mov eax, [ebp -4]
-mov [ebp -8], eax
-mov eax, [ebp -8]
-test eax, eax
-jz .LF9
-push dword ptr [ebp +12]
-push dword ptr [ebp -4]
-call [printn]
-
-add esp, 8
-
-mov [ebp -8], eax
-.LF9:
-mov eax, [ebp +8]
-mov ecx, [ebp +12]
-xor edx, edx
-idiv ecx
-mov eax, edx
-mov [ebp -8], eax
-
-mov eax, [ebp -8]
-mov ecx, 48
-add eax, ecx
-mov [ebp -8], eax
-
-push dword ptr [ebp -8]
-call [putchar]
-
-add esp, 4
-
-mov [ebp -8], eax
-pop ebx
-jmp exit
-
-1:
-sub esp, 8
-jmp 2b
-
-putchar:
-.long putchar + 4
-push ebp
-mov ebp, esp
-
-push ebx
-jmp 1f
-2:
-lea eax, [ebp +8]
-mov [ebp -4], eax
-push dword ptr 1
-push dword ptr [ebp -4]
-push dword ptr 1
-push dword ptr 4
-call [syscall]
-
-add esp, 16
-
-mov [ebp -4], eax
-mov eax, [ebp -4]
-jmp exit
-pop ebx
-jmp exit
-
-1:
-sub esp, 4
-jmp 2b
-
-char:
-.long char + 4
-push ebp
-mov ebp, esp
-
-push ebx
-jmp 1f
-2:
-mov eax, [ebp +8]
-mov ecx, [ebp +12]
-add eax, ecx
-mov [ebp -4], eax
-
-mov eax, [ebp -4]
-mov [ebp -4], eax
-mov eax, [ebp -4]
-mov eax, [eax]
-mov ecx, 255
-and eax, ecx
-mov [ebp -4], eax
-
-mov eax, [ebp -4]
-jmp exit
-pop ebx
-jmp exit
-
-1:
-sub esp, 4
-jmp 2b
-
-printstr:
-.long printstr + 4
-push ebp
-mov ebp, esp
-
-push ebx
-jmp 1f
-2:
-.LS10:
-mov eax, [ebp +8]
-mov [ebp -4], eax
-mov eax, [ebp -4]
-mov eax, [eax]
-mov ecx, 0
-cmp eax, ecx
-setne al
-movzx eax, al
-mov [ebp -4], eax
-
-mov eax, [ebp -4]
-test eax, eax
-jz .LF10
-mov eax, [ebp +8]
-mov [ebp -4], eax
-mov eax, [ebp -4]
-mov eax, [eax]
-push eax
-call [putchar]
-
-add esp, 4
-
-mov [ebp -4], eax
-mov eax, [ebp +8]
-mov ecx, eax
-mov eax, [ebp +8]
-inc eax
-mov [ebp +8], eax
-mov [ebp -4], ecx
-jmp .LS10
-.LF10:
-pop ebx
-jmp exit
-
-1:
-sub esp, 4
-jmp 2b
-
-exit:
+_exit:
 leave
 ret
 
-.globl putchar
-.globl printn
-.globl printstr
+.extern putchar
 .globl main
-.globl printf
-.extern syscall
-.globl char
+.extern printf
+.globl n
+.globl v
+.bss
+v_v: .zero 8004
+
+.data
+n: .long 2000
+
+v: .long v_v
 .section .rodata
-s_4: .string "jacob park"
-s_1: .string "equal\n"
-s_3: .string "My name is %s\n"
-s_2: .string "I am %d years old\n"
-s_0: .string "hello world!\n"
+s_0: .string "n: %d\n"
