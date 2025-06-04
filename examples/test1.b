@@ -7,6 +7,7 @@ c;
 d[5];
 e[5] 1, 2, "hello";
 f[2] 1, 2, 3, 4, 5;
+k[];
 
 /* 7.3 */
 main(argc, argv, envp) {

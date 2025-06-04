@@ -1,6 +1,9 @@
-#include <stdio.h>
+int main(int argc, char **argv, char **envp) {
+	int a;
+	char abc;
 
-int main()
-{
-	oprintf("%d\n", (unsigned)-1 >> 10);
+	printf("%d\n", a);
+	printf("%d\n", 1 + 2);
+
+	int arg[10];
 }
