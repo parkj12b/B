@@ -221,7 +221,7 @@ addition(a, b) {
 	extrn printf;
 	printf("%d, %d\n", a, b);
 	label:
-	return ((a)+(b));
+	return ((a) + (b));
 }
 
 subtract(a, b)
