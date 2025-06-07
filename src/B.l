@@ -84,8 +84,18 @@ char *str_to_assembly_str(const char *str);
 ":"         { return COLON; }
 "?"         { return QUESTION; }
 
--?[0-9]* {
+0[0-7]+ {
+    yylval.ival = strtol(yytext, NULL, 8);
+    return NUMBER;
+}
+
+-?[1-9][0-9]* {
     yylval.ival = atoi(yytext);
+    return NUMBER;
+}
+
+0 {
+    yylval.ival = 0;
     return NUMBER;
 }
 

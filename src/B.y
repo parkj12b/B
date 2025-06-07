@@ -70,7 +70,7 @@ int temp_depth = 0;
 %token <sval> IDENTIFIER STRING
 
 %token AUTO EXTRN IF ELSE WHILE SWITCH GOTO RETURN CASE
-%token NOT
+%token NOT ASM
 %token ASSIGN
 
 %token INC DEC
