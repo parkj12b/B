@@ -14,6 +14,7 @@ push eax
 mov eax, dword ptr [printf]
 call eax
 
+<<<<<<< Updated upstream
 add esp, 4
 
 mov [ebp -4], eax
@@ -25,6 +26,53 @@ mov [ebp -4], ebx
 mov eax, [ebp -4]
 mov eax, [eax]
 push eax
+=======
+
+lea eax, s_0
+mov [ebp -8], eax
+
+mov eax, [ebp -8]
+mov [ebp -12], eax
+
+mov eax, 0
+mov [ebp -12], eax
+
+mov eax, [ebp -12]
+mov [ebp -20], eax
+lea eax, s_1
+push eax
+mov eax, dword ptr [printf]
+call eax
+
+add esp, 4
+
+mov [ebp -20], eax
+.LS0:
+push dword ptr [ebp -12]
+push dword ptr [ebp -8]
+mov eax, dword ptr [char]
+call eax
+
+add esp, 8
+
+mov [ebp -20], eax
+mov eax, [ebp -20]
+mov [ebp -16], eax
+
+mov eax, [ebp -16]
+mov [ebp -20], eax
+mov eax, [ebp -20]
+mov ecx, 0
+cmp eax, ecx
+setne al
+movzx eax, al
+mov [ebp -20], eax
+
+mov eax, [ebp -20]
+test eax, eax
+jz .LF0
+push dword ptr [ebp -16]
+>>>>>>> Stashed changes
 lea eax, s_2
 push eax
 mov eax, dword ptr [printf]
@@ -32,6 +80,7 @@ call eax
 
 add esp, 8
 
+<<<<<<< Updated upstream
 mov [ebp -4], eax
 push dword ptr [b]
 lea eax, s_3
@@ -1187,15 +1236,96 @@ add esp, 8
 mov [ebp -60], eax
 push dword ptr 1
 mov eax, dword ptr [assert]
+=======
+mov [ebp -20], eax
+mov eax, [ebp -12]
+mov ecx, eax
+mov eax, [ebp -12]
+inc eax
+mov [ebp -12], eax
+mov [ebp -20], ecx
+jmp .LS0
+.LF0:
+push dword ptr 10
+mov eax, dword ptr [putchar]
+>>>>>>> Stashed changes
 call eax
 
 add esp, 4
 
+<<<<<<< Updated upstream
 mov [ebp -60], eax
+=======
+mov [ebp -20], eax
+lea eax, s_3
+push eax
+mov eax, dword ptr [printf]
+call eax
+
+add esp, 4
+
+mov [ebp -20], eax
+lea eax, [ebp -4]
+mov [ebp -20], eax
+push dword ptr [ebp -20]
+mov eax, dword ptr [time]
+call eax
+
+add esp, 4
+
+mov [ebp -20], eax
+push dword ptr [ebp -4]
+lea eax, s_4
+push eax
+mov eax, dword ptr [printf]
+call eax
+
+add esp, 8
+
+mov [ebp -20], eax
+lea eax, [ebp -216]
+mov [ebp -220], eax
+
+lea eax, s_5
+push eax
+mov eax, dword ptr [chdir]
+call eax
+
+add esp, 4
+
+mov [ebp -224], eax
+push dword ptr 50
+push dword ptr [ebp -220]
+mov eax, dword ptr [getcwd]
+call eax
+
+add esp, 8
+
+mov [ebp -224], eax
+push dword ptr [ebp -220]
+lea eax, s_6
+push eax
+mov eax, dword ptr [printf]
+call eax
+
+add esp, 8
+
+mov [ebp -224], eax
+push dword ptr 0
+lea eax, s_7
+push eax
+mov eax, dword ptr [chown]
+call eax
+
+add esp, 8
+
+mov [ebp -224], eax
+>>>>>>> Stashed changes
 pop ebx
 jmp _exit
 
 1:
+<<<<<<< Updated upstream
 sub esp, 64
 jmp 2b
 
@@ -1264,16 +1394,27 @@ jmp _exit
 
 1:
 sub esp, 8
+=======
+sub esp, 224
+>>>>>>> Stashed changes
 jmp 2b
 
 _exit:
 leave
 ret
 
+<<<<<<< Updated upstream
 .globl subtract
+=======
+.extern putchar
+.extern time
+.extern chdir
+.extern chown
+>>>>>>> Stashed changes
 .globl main
 .globl addition
 .extern printf
+<<<<<<< Updated upstream
 .extern assert
 .globl e
 .globl c
@@ -1363,3 +1504,16 @@ s_35: .string "expected 2: %d\n"
 s_58: .string "expected: 1, 2147483647 % 2147483646 %d\n"
 s_10: .string "expected: 3, %d\n"
 s_51: .string "expected: 1, 14 > 12 %d\n"
+=======
+.extern char
+.extern getcwd
+.section .rodata
+s_7: .string "/root/B"
+s_2: .string "%c"
+s_6: .string "cwd: %s\n"
+s_1: .string "\nchar() test\n"
+s_5: .string "/"
+s_4: .string "time(): %d\n"
+s_3: .string "\ntime() test\n"
+s_0: .string "hello world! :)"
+>>>>>>> Stashed changes

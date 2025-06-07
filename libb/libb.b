@@ -2,6 +2,7 @@
 
 True 1;
 False 0;
+NULL 0;
 
 /* source code */
 
@@ -87,6 +88,11 @@ chdir(dir) {
 	syscall(12, dir);
 }
 
+getcwd(buf, size) {
+	extrn syscall;
+	syscall(183, buf, size);
+}
+
 chown(file, owner) {
 	extrn syscall;
 	syscall(182, file, owner, -1);
@@ -110,3 +116,9 @@ time(timev) {
 	extrn syscall;
 	syscall(13, timev);
 }
+
+execl(string, args) {
+	extrn syscall, NULL;
+	syscall(11, args, NULL);
+}
+
