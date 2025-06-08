@@ -38,6 +38,8 @@ htable_t        *auto_table;
 size_t          label_counter = 0;
 size_t          label_index = 0;
 size_t          label_stack[128];
+size_t          loop_label_index = 0;
+size_t          loop_label_stack[128];
 
 /* offset stack */
 int offset_stack_value;
@@ -70,7 +72,7 @@ int temp_depth = 0;
 %token <sval> IDENTIFIER STRING
 
 %token AUTO EXTRN IF ELSE WHILE SWITCH GOTO RETURN CASE
-%token NOT ASM
+%token NOT BREAK CONTINUE
 %token ASSIGN
 
 %token INC DEC
@@ -159,6 +161,8 @@ definition:
                 yyerror("Array size must be an integer");
             }
             symbol->size = constant->value;
+        } else {
+            symbol->size = 1; // default size is 1
         }
 
         if ($5.kind == OPT_NONE) {
@@ -423,9 +427,27 @@ simple_statement:
         emit ("jmp _exit");
     }
     | opt_expr SEMICOLON {
+
         if ($1.kind != OPT_NONE) {
             expr_t *expr = &$1.value.expr;
+            if (expr->type != EXPR_CONST) {
+                get_symbol(expr->identifier);
+            }
             free_expr(&$1.value.expr);
+        }
+    }    
+    | BREAK SEMICOLON {
+        if (loop_label_index == 0) {
+            yyerror("break statement not within a loop");
+        } else {
+            emit("jmp .LE%zu", loop_label_stack[loop_label_index - 1]);
+        }
+    }
+    | CONTINUE SEMICOLON {
+        if (loop_label_index == 0) {
+            yyerror("continue statement not within a loop");
+        } else {
+            emit("jmp .LS%zu", loop_label_stack[loop_label_index - 1]);
         }
     }
     ;
@@ -483,12 +505,14 @@ if_closed:
 while_expr:
     WHILE {
         label_stack[label_index] = label_counter; 
+        loop_label_stack[loop_label_index] = label_counter;
         emit(".LS%zu:", label_stack[label_index]);
     } LPAREN expr RPAREN {
         load_value_into_reg(&$4, "eax");
         emit("test eax, eax");
-        emit("jz .LF%zu", label_stack[label_index]);
+        emit("jz .LE%zu", label_stack[label_index]);
         increase_label();
+        loop_label_index++;
         free_expr(&$4);
     }
     ;
@@ -501,11 +525,11 @@ open_statement:
     | if_closed ELSE open_statement {
         label_index--;
         emit(".LE%zu:", label_stack[label_index]);
-    }
-    | while_expr open_statement {
+    }    | while_expr open_statement {
         label_index--;
+        loop_label_index--;
         emit("jmp .LS%zu", label_stack[label_index]);
-        emit(".LF%zu:", label_stack[label_index]);
+        emit(".LE%zu:", label_stack[label_index]);
     }
     | statement_prefix open_statement /* no action */
     ;
@@ -515,11 +539,11 @@ closed_statement:
     | if_closed ELSE closed_statement {
         label_index--;
         emit(".LE%zu:", label_stack[label_index]);
-    }
-    | while_expr closed_statement {
+    }    | while_expr closed_statement {
         label_index--;
+        loop_label_index--;
         emit("jmp .LS%zu", label_stack[label_index]);
-        emit(".LF%zu:", label_stack[label_index]);
+        emit(".LE%zu:", label_stack[label_index]);
     }
     | statement_prefix closed_statement /* no action */
     | LBRACE opt_statement RBRACE

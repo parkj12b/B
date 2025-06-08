@@ -34,6 +34,8 @@ char *str_to_assembly_str(const char *str);
 "goto"      { return GOTO; }
 "return"    { return RETURN; }
 "case"      { return CASE; }
+"break"     { return BREAK; }
+"continue"  { return CONTINUE; }
 
 "="         { return ASSIGN; }
 "=|"        { return ASSIGN_OR; }

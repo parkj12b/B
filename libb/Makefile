@@ -2,9 +2,9 @@ B = ../B
 
 NAME = libb.a
 
-SRC = libb.b
+SRC = libb.b futex.b printf.b
 
-ASM = libb.s
+ASM = $(SRC:.b=.s)
 
 ASM_STATIC = mutex.s
 
@@ -12,21 +12,19 @@ ASM_OBJ = $(ASM:.s=.o)
 
 ASM_STATIC_OBJ = $(ASM_STATIC:.s=.o)
 
-OBJ = $(ASM_OBJ) $(ASM_STATIC_OBJ)
-
 all: $(NAME)
 
-$(ASM): $(SRC)
-	$(B) $(SRC) 2> /dev/null > $(ASM)
+%.s: %.b
+	$(B) $< 2>/dev/null > $@
 
 %.o: %.s
 	as --32 -o $@ $<
 
-$(NAME): $(OBJ) $(ASM) $(ASM_STATIC) $(SRC)
-	ar rcs $(NAME) $(OBJ)
+$(NAME): $(ASM_OBJ) $(ASM_STATIC_OBJ) $(SRC)
+	ar rcs $(NAME) $(ASM_OBJ) $(ASM_STATIC_OBJ)
 
 clean:
-	rm -f $(ASM) $(OBJ)
+	rm -f *.o $(ASM)
 
 fclean: clean
 	rm -f $(NAME)

@@ -87,7 +87,7 @@ mov [ebp -20], eax
 
 mov eax, [ebp -20]
 test eax, eax
-jz .LF0
+jz .LE0
 push dword ptr [ebp -16]
 lea eax, s_4
 push eax
@@ -104,7 +104,7 @@ inc eax
 mov [ebp -12], eax
 mov [ebp -20], ecx
 jmp .LS0
-.LF0:
+.LE0:
 push dword ptr 10
 mov eax, dword ptr [putchar]
 call eax
@@ -541,42 +541,12 @@ mov [ebp -488], eax
 mov eax, [ebp -488]
 test eax, eax
 jz .LF1
-lea eax, [ebp -484]
-mov [ebp -488], eax
-push dword ptr 1
-push dword ptr 0
-push dword ptr [ebp -488]
-mov eax, dword ptr [compare_and_exchange]
-call eax
-
-add esp, 12
-
-mov [ebp -488], eax
-mov eax, [ebp -488]
-mov ecx, 0
-cmp eax, ecx
-sete al
-movzx eax, al
-mov [ebp -488], eax
-
-mov eax, [ebp -488]
-test eax, eax
-jz .LF2
-lea eax, s_18
-push eax
-mov eax, dword ptr [printf]
-call eax
-
-add esp, 4
-
-mov [ebp -488], eax
-.LF2:
 mov eax, dword ptr [getpid]
 call eax
 
 mov [ebp -488], eax
 push dword ptr [ebp -488]
-lea eax, s_19
+lea eax, s_18
 push eax
 mov eax, dword ptr [printf]
 call eax
@@ -593,42 +563,12 @@ add esp, 4
 mov [ebp -488], eax
 jmp .LE1
 .LF1:
-lea eax, [ebp -484]
-mov [ebp -488], eax
-push dword ptr 1
-push dword ptr 0
-push dword ptr [ebp -488]
-mov eax, dword ptr [compare_and_exchange]
-call eax
-
-add esp, 12
-
-mov [ebp -488], eax
-mov eax, [ebp -488]
-mov ecx, 0
-cmp eax, ecx
-sete al
-movzx eax, al
-mov [ebp -488], eax
-
-mov eax, [ebp -488]
-test eax, eax
-jz .LF3
-lea eax, s_20
-push eax
-mov eax, dword ptr [printf]
-call eax
-
-add esp, 4
-
-mov [ebp -488], eax
-.LF3:
 mov eax, dword ptr [getpid]
 call eax
 
 mov [ebp -488], eax
 push dword ptr [ebp -488]
-lea eax, s_21
+lea eax, s_19
 push eax
 mov eax, dword ptr [printf]
 call eax
@@ -637,7 +577,7 @@ add esp, 8
 
 mov [ebp -488], eax
 push dword ptr [ebp -480]
-lea eax, s_22
+lea eax, s_20
 push eax
 mov eax, dword ptr [printf]
 call eax
@@ -662,7 +602,7 @@ mov eax, [ebp -480]
 mov [ebp -492], eax
 push dword ptr [ebp -488]
 push dword ptr [ebp -480]
-lea eax, s_23
+lea eax, s_21
 push eax
 mov eax, dword ptr [printf]
 call eax
@@ -695,7 +635,6 @@ ret
 .extern printf
 .extern creat
 .extern getcwd
-.extern compare_and_exchange
 .extern assert
 .extern write
 .extern char
@@ -703,24 +642,22 @@ ret
 s_4: .string "%c"
 s_7: .string "cwd: %s\n"
 s_3: .string "\nchar() test\n"
-s_18: .string "child changed atomic int\n"
 s_1: .string "%o %d\n"
-s_20: .string "parent changed atomic int\n"
 s_11: .string "fd: %d\n"
 s_9: .string "./test_file"
 s_13: .string "write code: %d\n"
-s_23: .string "wait returned pid: %d, status: %d\n"
+s_21: .string "wait returned pid: %d, status: %d\n"
 s_10: .string "creat code: %d\n"
 s_2: .string "hello world! :)"
 s_12: .string "test file content\n"
 s_8: .string "/"
-s_19: .string "child process: %d\n"
-s_21: .string "parent process: %d\n"
+s_18: .string "child process: %d\n"
+s_19: .string "parent process: %d\n"
 s_0: .string "test printf octal: \n"
 s_6: .string "time(): %d\n"
 s_14: .string "close code: %d\n"
 s_16: .string "-l"
-s_22: .string "child pid: %d\n"
+s_20: .string "child pid: %d\n"
 s_5: .string "\ntime() test\n"
 s_15: .string "ls"
 s_17: .string "fork pid: %d\n"

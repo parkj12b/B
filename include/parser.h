@@ -25,9 +25,11 @@ void increase_label();
 void pop_register();
 void oprintf(const char *fmt, ...);
 
-extern int      max_stack_value;
-extern size_t   label_counter;
-extern size_t   label_index;
-extern size_t   label_stack[];
+extern int max_stack_value;
+extern size_t label_counter;
+extern size_t label_index;
+extern size_t label_stack[];
+extern size_t loop_label_index;
+extern size_t loop_label_stack[];
 
 #endif
