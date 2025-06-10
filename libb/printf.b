@@ -3,6 +3,8 @@ futex_ptr;
 printf_flag 0;
 printf_mutex_str "printf_mutex";
 
+WHITE "\033[0m";
+
 init_print_mutex() {
     extrn printf_flag, compare_and_exchange, init_mutex, futex_ptr;
     extrn putchar;
@@ -15,22 +17,19 @@ init_print_mutex() {
 	}
 }
 
-/* user defined */
-printf(fmt, x1,x2,x3,x4,x5,x6,x7,x8,x9) {
+/*
+    make sure to init_print_mutex() before calling any mutex function
+    printf_internal should be called with futex_lock/futex_unlock
+*/
+printf_internal(fmt, x1,x2,x3,x4,x5,x6,x7,x8,x9) {
 	extrn printn, char, putchar, init_print_mutex, printn_internal;
-    extrn futex_lock, futex_unlock;
-    extrn futex_ptr;
 	auto adx, x, c, i, j;
-
-	init_print_mutex();
-
-	i= 0;	/* fmt index */
+    
+    i= 0;	/* fmt index */
 	adx = &x1;	/* argument pointer */
-    futex_lock(futex_ptr);
 loop :
 	while((c=char(fmt,i++)) != '%') {
 		if(c == '\0') {
-            futex_unlock(futex_ptr);
 			return ;
 		}
 		putchar(c);
@@ -63,6 +62,20 @@ loop :
 	i--;
 	adx=-4;
 	goto loop;
+}
+
+/* user defined */
+printf(fmt, x1,x2,x3,x4,x5,x6,x7,x8,x9) {
+	
+    extrn futex_lock, futex_unlock, printf_internal;
+    extrn futex_ptr;
+
+	init_print_mutex();
+
+    futex_lock(futex_ptr);
+    printf_internal(fmt, x1,x2,x3,x4,x5,x6,x7,x8,x9);
+	futex_unlock(futex_ptr);
+    return ;
 }
 
 snprintf(buf, size, fmt, x1,x2,x3,x4,x5,x6,x7,x8,x9) {
@@ -181,4 +194,17 @@ printn_internal(n, b) {
     if(a=n/b) /* assignment, not test for equality */
 		printn_internal(a, b); /* recursive */
 	putchar(n%b + '0');
+}
+
+printf_color(color, fmt, args) {
+    extrn printf_internal, futex_lock, futex_unlock, init_print_mutex;
+    extrn futex_ptr, putchar, WHITE;
+
+    init_print_mutex();
+
+    futex_lock(futex_ptr); /* acquire lock */
+    printf_internal(color);
+    printf_internal(fmt, args);
+    printf_internal(WHITE); /* reset color */
+    futex_unlock(futex_ptr); /* release lock */
 }

@@ -34,6 +34,8 @@
     "unistd.h": "c",
     "fcntl-linux.h": "c",
     "mman-map-flags-generic.h": "c",
-    "mman-linux.h": "c"
+    "mman-linux.h": "c",
+    "stat.h": "c",
+    "termios.h": "c"
   }
 }

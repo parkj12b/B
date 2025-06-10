@@ -2,7 +2,8 @@ B = ../B
 
 NAME = libb.a
 
-SRC = libb.b futex.b printf.b
+SRC = libb.b futex.b printf.b termios_iflag.b termios_oflag.b \
+	termios_lflag.b termios_cflag.b \
 
 ASM = $(SRC:.b=.s)
 
@@ -26,9 +27,12 @@ $(NAME): $(ASM_OBJ) $(ASM_STATIC_OBJ) $(SRC)
 clean:
 	rm -f *.o $(ASM)
 
-fclean: clean
+fclean: 
+	$(MAKE) clean
 	rm -f $(NAME)
 
-re: fclean all
+re:
+	$(MAKE) fclean 
+	$(MAKE) all
 
 .PHONY: all clean fclean re

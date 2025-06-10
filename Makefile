@@ -17,6 +17,8 @@ TEST_SRC = test_hash_table.c test_main.c hash_table.c
 
 TEST_SRCS = $(addprefix src/, $(TEST_SRC))
 
+libb = libb.a
+
 SRC = 	codegen.c hash_table.c symbol_table.c vector.c parser.c \
 		string_table.c compiler_struct.c parser_procedure.c \
 		yyfree.c
@@ -39,6 +41,9 @@ $(NAME): $(FLEX_SRCS) $(BISON_SRCS) $(LIBFT)
 $(LIBFT):
 	$(MAKE) -C libft
 
+$(libb):
+	$(MAKE) -C libb
+
 nocounter: $(FLEX_SRCS) $(BISON_SRCS)
 	bison -d $(BISON_SRCS)
 	flex $(FLEX_SRCS)
@@ -57,8 +62,12 @@ re:
 	$(MAKE) fclean
 	$(MAKE) all
 
-test: 
-	$(CC) -g -Iinclude -Ilibft/include $(TEST_SRCS) libft/libft.a -o a.out
+TEST_MAIN = examples/libbtest.b
+
+test: $(libb) $(TEST_MAIN) $(NAME)
+	./B $(TEST_MAIN) 2>/dev/null > test.s
+	as --32 test.s -o test.o
+	ld -pie -dynamic-linker /lib/ld-linux.so.2 -m elf_i386 test.o brt0_fixed3.o -o test -L./libb -lb
 
 asm:
 	$(NAME) exmaples/test1.b 2> /dev/null > test.asm
