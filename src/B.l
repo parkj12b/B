@@ -39,20 +39,20 @@ char *str_to_assembly_str(const char *str);
 
 "="         { return ASSIGN; }
 "=|"        { return ASSIGN_OR; }
-"=&"        { return ERROR; }
-"==="        { return ERROR; }
-"=!="        { return ERROR; }
+"==="       { return ERROR; }
+"=!="       { return ERROR; }
 "=<"        { return ERROR; }
-"=<="        { return ERROR; }
+"=<="       { return ERROR; }
 "=>"        { return ERROR; }
-"=>="        { return ERROR; }
-"=<<"        { return ASSIGN_LSHIFT; }
-"=>>"        { return ASSIGN_RSHIFT; }
+"=>="       { return ERROR; }
+"=<<"       { return ASSIGN_LSHIFT; }
+"=>>"       { return ASSIGN_RSHIFT; }
 "=-"        { return ASSIGN_MINUS; }
 "=+"        { return ASSIGN_PLUS; }
 "=%"        { return ASSIGN_MOD; }
 "=*"        { return ASSIGN_MUL; }
 "=/"        { return ASSIGN_DIVIDE; }
+"=&"        { return ASSIGN_AMPERSAND; }
 
 "|"         { return OR; } //binary
 "&"         { return AMPERSAND; }
@@ -74,6 +74,7 @@ char *str_to_assembly_str(const char *str);
 "--"        { return DEC; }
 
 "!"         { return NOT; }
+"~"         { return BIT_NOT; }
 
 "("         { return LPAREN; }
 ")"         { return RPAREN; }

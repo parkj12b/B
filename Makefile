@@ -68,6 +68,7 @@ test: $(libb) $(TEST_MAIN) $(NAME)
 	./B $(TEST_MAIN) 2>/dev/null > test.s
 	as --32 test.s -o test.o
 	ld -pie -dynamic-linker /lib/ld-linux.so.2 -m elf_i386 test.o brt0_fixed3.o -o test -L./libb -lb
+	sudo setcap cap_setuid+ep test
 
 asm:
 	$(NAME) exmaples/test1.b 2> /dev/null > test.asm

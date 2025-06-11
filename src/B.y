@@ -75,13 +75,13 @@ int temp_depth = 0;
 %token NOT BREAK CONTINUE
 %token ASSIGN
 
-%token INC DEC
+%token INC DEC BIT_NOT
 %token OR EQ NEQ LT LE GT GE LSHIFT RSHIFT STAR SLASH MOD PLUS MINUS //TODO: negative
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token SEMICOLON COMMA COLON QUESTION
 %token AMPERSAND
 %token ASSIGN_OR ASSIGN_LSHIFT ASSIGN_RSHIFT ASSIGN_MINUS ASSIGN_PLUS
-%token ASSIGN_MOD ASSIGN_MUL ASSIGN_DIVIDE
+%token ASSIGN_MOD ASSIGN_MUL ASSIGN_DIVIDE ASSIGN_AMPERSAND
 %token ERROR
 
 %type <opt> opt_ident_list opt_ival_list opt_expr_list
@@ -94,7 +94,7 @@ int temp_depth = 0;
 %type <var_decl> var_decl
 
 %left COMMA
-%right ASSIGN ASSIGN_OR ASSIGN_LSHIFT ASSIGN_RSHIFT ASSIGN_MINUS ASSIGN_PLUS ASSIGN_MOD ASSIGN_MUL ASSIGN_DIVIDE
+%right ASSIGN ASSIGN_OR ASSIGN_LSHIFT ASSIGN_RSHIFT ASSIGN_MINUS ASSIGN_PLUS ASSIGN_MOD ASSIGN_MUL ASSIGN_DIVIDE ASSIGN_AMPERSAND
 %right QUESTION COLON TERNARY
 %left OR
 %left NOT
@@ -104,7 +104,7 @@ int temp_depth = 0;
 %left LSHIFT RSHIFT 
 %left PLUS MINUS
 %left STAR SLASH MOD //star is MUL
-%right INC DEC UNARY DEREF ADDR_OF
+%right INC DEC UNARY DEREF ADDR_OF BIT_NOT
 %left LBRACKET RBRACKET LPAREN RPAREN
 %right THEN ELSE
 
@@ -561,6 +561,11 @@ assign:
         free_expr(&$3);
         return_post_assign(&$$, &$1);
     }
+    | expr ASSIGN_AMPERSAND expr %prec ASSIGN_AMPERSAND {
+        perform_assign(&$1, ASSIGN_AMPERSAND, &$3);
+        free_expr(&$3);
+        return_post_assign(&$$, &$1);
+    }
     | expr ASSIGN_LSHIFT expr %prec ASSIGN_LSHIFT {
         perform_assign(&$1, ASSIGN_LSHIFT, &$3);
         free_expr(&$3);
@@ -699,6 +704,15 @@ expr:
         $$ = $2;
         $$.type = EXPR_VAL;
         $$.val_kind = EXPR_RVALUE;
+    }
+    | BIT_NOT expr %prec BIT_NOT {
+        load_value_into_reg(&$2, "eax");
+        free_expr(&$2);
+        emit("not eax");
+        $$.type = EXPR_VAL;
+        $$.val_kind = EXPR_RVALUE;
+        add_temp_symbol(&$$);
+        register_to_lvalue(&$$, "eax");
     }
     | expr INC {
         if ($1.val_kind != EXPR_LVALUE) {

@@ -382,12 +382,15 @@ void perform_binary(int op)
 		perform_assign_div();
 		emit("mov eax, edx");
 		break;
-	case EQ:
+	case ASSIGN_AMPERSAND:
+		perform_assign_op("and");
+		break;
 	case NEQ:
 	case LT:
 	case LE:
 	case GT:
 	case GE:
+	case EQ:
 		perform_assign_op("cmp");
 		cmp_binary(op);
 		break;
@@ -419,7 +422,6 @@ void perform_assign(expr_t *lhs, int op, expr_t *rhs)
 		load_lhs_rhs(lhs, rhs);
 
 	perform_binary(op);
-
 	register_to_lvalue(lhs, "eax");
 	oprintf("\n");
 }
